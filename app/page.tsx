@@ -9,6 +9,7 @@ import {
   LineElement,
   Tooltip,
   Filler,
+  type ScriptableContext,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 
@@ -22,9 +23,9 @@ ChartJS.register(
 );
 
 ChartJS.defaults.font.family =
-  '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif';
+  'var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif';
 ChartJS.defaults.font.size = 13;
-ChartJS.defaults.color = "#475569";
+ChartJS.defaults.color = "#94A3B8";
 
 const fmt = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
 const YEARS = Array.from({ length: 25 }, (_, i) => i + 1);
@@ -71,6 +72,8 @@ export default function Page() {
 
   const savingsAt = (y: number) => edisonCumArr[y - 1] - ppaCumArr[y - 1];
   const total = savingsAt(25);
+  const edisonTotal = edisonCumArr[24];
+  const sunrunTotal = ppaCumArr[24];
 
   const headlineRef = useBumpOnChange(total, "pulse");
 
@@ -90,30 +93,43 @@ export default function Page() {
         {
           label: "Edison",
           data: edisonCumArr,
-          borderColor: "#D32F2F",
-          backgroundColor: "rgba(211, 47, 47, 0)",
+          borderColor: "#FB7185",
+          backgroundColor: "rgba(251, 113, 133, 0)",
           borderWidth: 3,
-          tension: 0.25,
+          tension: 0.28,
           pointRadius: 0,
-          pointHoverRadius: 6,
-          pointHoverBackgroundColor: "#D32F2F",
-          pointHoverBorderColor: "#fff",
-          pointHoverBorderWidth: 2,
+          pointHoverRadius: 7,
+          pointHoverBackgroundColor: "#FB7185",
+          pointHoverBorderColor: "#0F1626",
+          pointHoverBorderWidth: 3,
           fill: false as const,
           order: 1,
         },
         {
           label: "Sunrun",
           data: ppaCumArr,
-          borderColor: "#00A651",
-          backgroundColor: "rgba(0, 166, 81, 0.18)",
+          borderColor: "#10B981",
+          backgroundColor: (ctx: ScriptableContext<"line">) => {
+            const { ctx: c, chartArea } = ctx.chart;
+            if (!chartArea) return "rgba(16, 185, 129, 0.18)";
+            const g = c.createLinearGradient(
+              0,
+              chartArea.top,
+              0,
+              chartArea.bottom
+            );
+            g.addColorStop(0, "rgba(16, 185, 129, 0.05)");
+            g.addColorStop(0.6, "rgba(16, 185, 129, 0.22)");
+            g.addColorStop(1, "rgba(16, 185, 129, 0.35)");
+            return g;
+          },
           borderWidth: 3,
-          tension: 0.25,
+          tension: 0.28,
           pointRadius: 0,
-          pointHoverRadius: 6,
-          pointHoverBackgroundColor: "#00A651",
-          pointHoverBorderColor: "#fff",
-          pointHoverBorderWidth: 2,
+          pointHoverRadius: 7,
+          pointHoverBackgroundColor: "#10B981",
+          pointHoverBorderColor: "#0F1626",
+          pointHoverBorderWidth: 3,
           fill: "-1" as const,
           order: 2,
         },
@@ -132,13 +148,17 @@ export default function Page() {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: "rgba(15, 23, 42, 0.95)",
-            titleColor: "#fff",
-            bodyColor: "#fff",
-            padding: 12,
-            borderColor: "rgba(255,255,255,0.05)",
+            backgroundColor: "rgba(7, 10, 20, 0.96)",
+            titleColor: "#F1F5F9",
+            bodyColor: "#F1F5F9",
+            padding: 14,
+            borderColor: "rgba(255,255,255,0.10)",
             borderWidth: 1,
-            cornerRadius: 10,
+            cornerRadius: 12,
+            titleFont: { weight: 700, size: 13 },
+            bodyFont: { size: 13 },
+            displayColors: true,
+            boxPadding: 6,
             callbacks: {
               title: (items: any[]) => "Year " + items[0].label,
               label: (item: any) =>
@@ -146,9 +166,11 @@ export default function Page() {
               afterBody: (items: any[]) => {
                 if (items.length < 2) return "";
                 const ed =
-                  items.find((i) => i.dataset.label === "Edison")?.parsed.y ?? 0;
+                  items.find((i) => i.dataset.label === "Edison")?.parsed.y ??
+                  0;
                 const sr =
-                  items.find((i) => i.dataset.label === "Sunrun")?.parsed.y ?? 0;
+                  items.find((i) => i.dataset.label === "Sunrun")?.parsed.y ??
+                  0;
                 return "\n Savings: " + fmt(ed - sr);
               },
             },
@@ -158,22 +180,36 @@ export default function Page() {
           x: {
             title: {
               display: true,
-              text: "Year",
-              color: "#64748b",
-              font: { weight: 600 as const },
+              text: "YEAR",
+              color: "#64748B",
+              font: { weight: 700 as const, size: 11 },
+              padding: { top: 10 },
             },
             grid: { display: false },
-            ticks: { autoSkip: true, maxTicksLimit: 13 },
+            border: { color: "rgba(255,255,255,0.08)" },
+            ticks: {
+              autoSkip: true,
+              maxTicksLimit: 13,
+              color: "#64748B",
+              font: { size: 12 },
+            },
           },
           y: {
             title: {
               display: true,
-              text: "Cumulative Cost",
-              color: "#64748b",
-              font: { weight: 600 as const },
+              text: "CUMULATIVE COST",
+              color: "#64748B",
+              font: { weight: 700 as const, size: 11 },
+              padding: { bottom: 10 },
             },
-            grid: { color: "#f1f5f9" },
-            ticks: { callback: (v: any) => fmt(Number(v)) },
+            grid: { color: "rgba(255,255,255,0.04)" },
+            border: { display: false },
+            ticks: {
+              callback: (v: any) => fmt(Number(v)),
+              color: "#64748B",
+              font: { size: 12 },
+              padding: 8,
+            },
             beginAtZero: true,
           },
         },
@@ -182,133 +218,189 @@ export default function Page() {
   );
 
   return (
-    <main className="max-w-[1400px] mx-auto px-5 md:px-8 py-6 md:py-8 min-h-screen">
-      {/* Headline */}
-      <section className="text-center mb-6 md:mb-8">
-        <div className="text-slate-500 uppercase tracking-widest text-xs md:text-sm font-semibold mb-2">
-          Total 25-Year Savings
+    <main className="max-w-[1400px] mx-auto px-5 md:px-8 py-8 md:py-12 min-h-screen">
+      {/* Top mark */}
+      <div className="flex items-center justify-between mb-10 md:mb-14">
+        <div className="flex items-center gap-2.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.7)]" />
+          <div className="text-[13px] font-semibold tracking-[0.18em] uppercase text-slate-300">
+            Solar vs Edison
+          </div>
         </div>
-        <div ref={headlineRef} className="headline">
-          {fmt(total)}
+        <div className="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-500 hidden sm:block">
+          25-Year Projection
+        </div>
+      </div>
+
+      {/* Headline */}
+      <section className="text-center mb-10 md:mb-14">
+        <div className="eyebrow mb-4">Your 25-Year Savings</div>
+        <div className="headline-wrap">
+          <div ref={headlineRef} className="headline">
+            {fmt(total)}
+          </div>
+        </div>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <div className="stat-pill">
+            <span className="dot-red" />
+            <span className="label">Edison</span>
+            <span className="value">{fmt(edisonTotal)}</span>
+          </div>
+          <div className="text-slate-600 text-sm font-medium hidden sm:block">
+            vs
+          </div>
+          <div className="stat-pill">
+            <span className="dot-green" />
+            <span className="label">Sunrun</span>
+            <span className="value">{fmt(sunrunTotal)}</span>
+          </div>
         </div>
       </section>
 
       {/* Inputs */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-7">
-        <div>
-          <div className="input-label">Current Edison Bill</div>
-          <div className="relative">
-            <span className="money-prefix">$</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              min={0}
-              step={1}
-              value={edisonBill}
-              onChange={(e) =>
-                setEdisonBill(Math.max(0, Number(e.target.value) || 0))
-              }
-              onFocus={(e) => e.currentTarget.select()}
-              className="money-input"
-            />
+      <section className="panel p-5 md:p-7 mb-7 md:mb-8">
+        <div className="flex items-center justify-between mb-5">
+          <div className="text-[15px] font-semibold text-slate-200">
+            Your Numbers
           </div>
-          <div className="text-xs text-slate-500 mt-2">Monthly</div>
+          <div className="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-500">
+            Adjust live
+          </div>
         </div>
 
-        <div>
-          <div className="input-label">Sunrun PPA Payment</div>
-          <div className="relative">
-            <span className="money-prefix">$</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              min={0}
-              step={1}
-              value={ppaPayment}
-              onChange={(e) =>
-                setPpaPayment(Math.max(0, Number(e.target.value) || 0))
-              }
-              onFocus={(e) => e.currentTarget.select()}
-              className="money-input"
-            />
-          </div>
-          <div className="text-xs text-slate-500 mt-2">Monthly</div>
-        </div>
-
-        <div>
-          <div className="flex items-baseline justify-between mb-2">
-            <div className="input-label !mb-0">Edison Rate Increase</div>
-            <div className="slider-value">
-              <span>{edisonRate.toFixed(1)}</span>%
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
+          <div>
+            <div className="input-label mb-2.5">Current Edison Bill</div>
+            <div className="input-shell relative">
+              <span className="money-prefix">$</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step={1}
+                value={edisonBill}
+                onChange={(e) =>
+                  setEdisonBill(Math.max(0, Number(e.target.value) || 0))
+                }
+                onFocus={(e) => e.currentTarget.select()}
+                className="money-input"
+              />
+            </div>
+            <div className="text-[11px] text-slate-500 mt-2 font-medium tracking-wide uppercase">
+              per month
             </div>
           </div>
-          <input
-            type="range"
-            min={3}
-            max={10}
-            step={0.1}
-            value={edisonRate}
-            onChange={(e) => setEdisonRate(Number(e.target.value))}
-          />
-          <div className="flex justify-between text-xs text-slate-400 mt-2">
-            <span>3%</span>
-            <span>per year</span>
-            <span>10%</span>
-          </div>
-        </div>
 
-        <div>
-          <div className="flex items-baseline justify-between mb-2">
-            <div className="input-label !mb-0">PPA Annual Escalator</div>
-            <div className="slider-value">
-              <span>{ppaEsc.toFixed(1)}</span>%
+          <div>
+            <div className="input-label mb-2.5">Sunrun PPA Payment</div>
+            <div className="input-shell relative">
+              <span className="money-prefix">$</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step={1}
+                value={ppaPayment}
+                onChange={(e) =>
+                  setPpaPayment(Math.max(0, Number(e.target.value) || 0))
+                }
+                onFocus={(e) => e.currentTarget.select()}
+                className="money-input"
+              />
+            </div>
+            <div className="text-[11px] text-slate-500 mt-2 font-medium tracking-wide uppercase">
+              per month
             </div>
           </div>
-          <input
-            type="range"
-            min={0}
-            max={3.5}
-            step={0.1}
-            value={ppaEsc}
-            onChange={(e) => setPpaEsc(Number(e.target.value))}
-          />
-          <div className="flex justify-between text-xs text-slate-400 mt-2">
-            <span>0%</span>
-            <span>per year</span>
-            <span>3.5%</span>
+
+          <div>
+            <div className="flex items-baseline justify-between mb-3">
+              <div className="input-label">Edison Rate Increase</div>
+              <div className="slider-value">
+                {edisonRate.toFixed(1)}
+                <span className="text-slate-500 font-semibold">%</span>
+              </div>
+            </div>
+            <input
+              type="range"
+              min={3}
+              max={10}
+              step={0.1}
+              value={edisonRate}
+              onChange={(e) => setEdisonRate(Number(e.target.value))}
+            />
+            <div className="flex justify-between text-[11px] text-slate-600 mt-2.5 font-medium tracking-wide uppercase">
+              <span>3%</span>
+              <span className="text-slate-500">per year</span>
+              <span>10%</span>
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-baseline justify-between mb-3">
+              <div className="input-label">PPA Annual Escalator</div>
+              <div className="slider-value">
+                {ppaEsc.toFixed(1)}
+                <span className="text-slate-500 font-semibold">%</span>
+              </div>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={3.5}
+              step={0.1}
+              value={ppaEsc}
+              onChange={(e) => setPpaEsc(Number(e.target.value))}
+            />
+            <div className="flex justify-between text-[11px] text-slate-600 mt-2.5 font-medium tracking-wide uppercase">
+              <span>0%</span>
+              <span className="text-slate-500">per year</span>
+              <span>3.5%</span>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Chart */}
-      <section className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 mb-7">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-          <div className="text-sm md:text-base font-semibold text-slate-700">
-            Cumulative Cost Over 25 Years
+      <section className="panel p-5 md:p-7 mb-7 md:mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div>
+            <div className="text-[15px] font-semibold text-slate-200">
+              Cumulative Cost Over 25 Years
+            </div>
+            <div className="text-[12px] text-slate-500 mt-0.5">
+              The green area is what stays in your pocket
+            </div>
           </div>
-          <div className="flex items-center gap-5 text-sm">
-            <span className="text-slate-700 font-medium">
-              <span
-                className="legend-dot"
-                style={{ background: "#D32F2F" }}
-              ></span>
-              Edison
-            </span>
-            <span className="text-slate-700 font-medium">
-              <span
-                className="legend-dot"
-                style={{ background: "#00A651" }}
-              ></span>
-              Sunrun
-            </span>
-            <span className="text-slate-700 font-medium hidden sm:inline">
+          <div className="flex items-center gap-5 text-[13px]">
+            <span className="text-slate-300 font-semibold">
               <span
                 className="legend-dot"
                 style={{
-                  background: "rgba(0, 166, 81, 0.18)",
-                  border: "1px solid #00A651",
+                  background: "#FB7185",
+                  boxShadow: "0 0 10px rgba(251, 113, 133, 0.5)",
                 }}
-              ></span>
+              />
+              Edison
+            </span>
+            <span className="text-slate-300 font-semibold">
+              <span
+                className="legend-dot"
+                style={{
+                  background: "#10B981",
+                  boxShadow: "0 0 10px rgba(16, 185, 129, 0.5)",
+                }}
+              />
+              Sunrun
+            </span>
+            <span className="text-slate-300 font-semibold hidden sm:inline">
+              <span
+                className="legend-dot"
+                style={{
+                  background: "rgba(16, 185, 129, 0.25)",
+                  border: "1px solid rgba(16, 185, 129, 0.6)",
+                }}
+              />
               Savings
             </span>
           </div>
@@ -319,17 +411,25 @@ export default function Page() {
       </section>
 
       {/* Savings Cards */}
-      <section className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-8">
-        {CARD_YEARS.map((y) => (
-          <SavingsCard key={y} year={y} amount={savingsAt(y)} />
-        ))}
+      <section className="mb-10">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="text-[11px] font-bold tracking-[0.22em] uppercase text-slate-400">
+            Cumulative savings
+          </div>
+          <div className="hairline flex-1" />
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
+          {CARD_YEARS.map((y) => (
+            <SavingsCard key={y} year={y} amount={savingsAt(y)} />
+          ))}
+        </div>
       </section>
 
       {/* Footer */}
-      <footer className="text-center pb-6">
+      <footer className="text-center pb-8">
         <button
           onClick={() => setModalOpen(true)}
-          className="text-sm text-slate-500 hover:text-slate-800 underline underline-offset-4 decoration-slate-300 hover:decoration-slate-600 transition"
+          className="text-[13px] text-slate-500 hover:text-slate-200 underline underline-offset-4 decoration-slate-700 hover:decoration-slate-400 transition"
         >
           Assumptions &amp; methodology
         </button>
@@ -342,65 +442,66 @@ export default function Page() {
             if (e.target === e.currentTarget) setModalOpen(false);
           }}
         >
-          <div className="bg-white rounded-2xl max-w-xl w-full p-6 md:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+          <div className="modal-card rounded-2xl max-w-xl w-full p-6 md:p-8 relative max-h-[90vh] overflow-y-auto">
             <button
               aria-label="Close"
               onClick={() => setModalOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-2xl leading-none"
+              className="absolute top-4 right-4 text-slate-500 hover:text-slate-200 text-2xl leading-none w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/5 transition"
             >
               &times;
             </button>
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">
+            <div className="eyebrow mb-3">Transparency</div>
+            <h2 className="text-2xl md:text-[28px] font-bold text-slate-100 mb-5 tracking-tight">
               How the math works
             </h2>
-            <div className="space-y-4 text-slate-700 leading-relaxed text-[15px]">
+            <div className="space-y-5 text-slate-300 leading-relaxed text-[15px]">
               <p>
                 We model each year of cost independently, then add them up to
                 get a running total.
               </p>
               <div>
-                <div className="font-semibold text-slate-900 mb-1">
+                <div className="font-semibold text-slate-100 mb-1.5">
                   Edison cost in year N
                 </div>
-                <p>
+                <p className="text-slate-400">
                   Your current monthly bill &times; 12, then compounded by the
-                  Edison rate increase for each year you&apos;re a customer. So
-                  a $250/mo bill with 6% annual increases costs $3,000 in year
-                  1 and roughly $3,180 in year 2.
+                  Edison rate increase for each year you&apos;re a customer.
+                  So a $250/mo bill with 6% annual increases costs $3,000 in
+                  year 1 and roughly $3,180 in year 2.
                 </p>
               </div>
               <div>
-                <div className="font-semibold text-slate-900 mb-1">
+                <div className="font-semibold text-slate-100 mb-1.5">
                   Sunrun PPA cost in year N
                 </div>
-                <p>
+                <p className="text-slate-400">
                   Your locked-in PPA payment &times; 12, compounded by the PPA
-                  escalator. Sunrun&apos;s standard escalator is 2.9%, but many
-                  agreements offer 0% — adjust the slider to match the offer on
-                  the table.
+                  escalator. Sunrun&apos;s standard escalator is 2.9%, but
+                  many agreements offer 0% — adjust the slider to match the
+                  offer on the table.
                 </p>
               </div>
               <div>
-                <div className="font-semibold text-slate-900 mb-1">
+                <div className="font-semibold text-slate-100 mb-1.5">
                   Cumulative savings
                 </div>
-                <p>
+                <p className="text-slate-400">
                   The difference between the running total of Edison costs and
                   the running total of PPA costs at each year. This is what
                   fills the green area on the chart.
                 </p>
               </div>
-              <div className="border-t border-slate-200 pt-4 text-sm text-slate-500">
-                <p className="font-semibold text-slate-700 mb-1">
+              <div className="border-t border-white/10 pt-5 text-[13px] text-slate-500">
+                <p className="font-semibold text-slate-300 mb-2">
                   What this tool does not include
                 </p>
-                <ul className="list-disc pl-5 space-y-1">
+                <ul className="list-disc pl-5 space-y-1.5 marker:text-slate-600">
                   <li>Time-of-use rate differences or NEM credits</li>
                   <li>System production changes due to weather or degradation</li>
                   <li>Federal tax credits (PPAs are not owned by the customer)</li>
                   <li>Home resale impact</li>
                 </ul>
-                <p className="mt-3">
+                <p className="mt-4">
                   Numbers are illustrative — your signed agreement governs
                   actual payments.
                 </p>
@@ -416,7 +517,7 @@ export default function Page() {
 function SavingsCard({ year, amount }: { year: number; amount: number }) {
   const ref = useBumpOnChange(amount, "bump");
   return (
-    <div ref={ref} className="card">
+    <div ref={ref} className="savings-card">
       <div className="card-year">Year {year}</div>
       <div className="card-amount">{fmt(amount)}</div>
     </div>
