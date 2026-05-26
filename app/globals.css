@@ -193,6 +193,46 @@ input[type="range"]::-moz-range-thumb {
   cursor: pointer;
 }
 
+/* ---------- Locked value (PPA escalator) ---------- */
+
+.locked-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  min-height: 66px;
+}
+.locked-value {
+  font-size: 34px;
+  font-weight: 600;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.locked-value-unit {
+  color: var(--text-dim);
+  font-weight: 500;
+  margin-left: 2px;
+}
+.locked-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  color: var(--green-bright);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
 /* ---------- Savings cards ---------- */
 
 .savings-card {

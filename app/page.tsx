@@ -30,6 +30,7 @@ ChartJS.defaults.color = "#94A3B8";
 const fmt = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
 const YEARS = Array.from({ length: 25 }, (_, i) => i + 1);
 const CARD_YEARS = [1, 5, 10, 20, 25] as const;
+const PPA_ESCALATOR = 3.5;
 
 /* ----------------------------- Q&A content ----------------------------- */
 
@@ -47,11 +48,15 @@ const CATEGORIES: Category[] = [
       },
       {
         q: "How does this actually save me money?",
-        a: "Your Sunrun rate is locked in and rises by a small, contractually defined escalator each year — typically 0% or 2.9%. Edison's rates have historically risen around 6% per year. The gap compounds over time. The number at the top of this page is that compounded difference over 25 years.",
+        a: "Your Sunrun rate is locked in and rises by a fixed 3.5% per year. Edison's rates have historically risen around 6% per year. The gap compounds over time. The number at the top of this page is that compounded difference over 25 years.",
+      },
+      {
+        q: "Does the system include batteries?",
+        a: "Yes. Under California's NEM 3.0 rules, every new Sunrun system includes 1 to 4 home batteries sized to your usage. The batteries store the energy your panels produce during the day so you can use it at night and during peak-rate hours — meaning you pull very little from the grid.",
       },
       {
         q: "What about cloudy days or nighttime?",
-        a: "You stay connected to the grid. When the panels aren't producing enough, you pull from Edison as usual. The PPA only charges you for the energy the panels actually generate.",
+        a: "Your batteries cover most of it. The system stores the energy your panels produce during the day and runs your home off the battery at night, during cloudy stretches, and during Edison's most expensive peak hours. You stay connected to the grid as a backup, but most homes draw very little from Edison once the system is on.",
       },
       {
         q: "Is there really nothing down?",
@@ -65,7 +70,7 @@ const CATEGORIES: Category[] = [
     items: [
       {
         q: "Why not just buy panels outright?",
-        a: "Purchasing offers the best long-term return if you have the cash (typically $25k–$40k) and can use the 30% federal tax credit. The PPA exists for homeowners who'd rather skip the upfront cost and start saving immediately. Many people compare both — there's no wrong answer.",
+        a: "Purchasing requires $25k–$40k in cash upfront and several years of payback before you break even. The federal solar tax credit was eliminated at the end of 2025, so buying no longer comes with the 30% rebate it used to. The PPA exists for homeowners who'd rather skip the upfront cost and start saving on day one.",
       },
       {
         q: "What if Edison's rates don't keep going up?",
@@ -73,11 +78,11 @@ const CATEGORIES: Category[] = [
       },
       {
         q: "Will my Sunrun payment go up?",
-        a: "Yes — by the escalator written into your agreement, typically 0% or 2.9%. Whatever it is, it's locked in writing and is far smaller than Edison's annual increases.",
+        a: "Yes — by 3.5% per year. That's the contractual escalator for every new PPA. It's locked in writing for 25 years and is well below Edison's annual increases.",
       },
       {
         q: "What's the catch?",
-        a: "The honest tradeoff: you don't own the panels, you don't get the 30% federal tax credit, and you commit for 20–25 years (the agreement transfers if you move). In exchange, you pay nothing upfront and lock in a lower rate for the life of the system.",
+        a: "The honest tradeoff: you don't own the panels, and you commit for 25 years (the agreement transfers if you move). In exchange, you pay nothing upfront, lock in a rate below Edison's for the life of the system, and Sunrun handles all maintenance.",
       },
     ],
   },
@@ -105,11 +110,11 @@ const CATEGORIES: Category[] = [
     items: [
       {
         q: "Who fixes things if they break?",
-        a: "Sunrun. Because they own the system, they cover all repairs, inverter replacement, system monitoring, and roof-penetration warranties for the entire 25 years. No out-of-pocket cost to you.",
+        a: "Sunrun. Because they own the system, they cover all repairs, inverter and battery replacement, system monitoring, and roof-penetration warranties for the entire 25 years. No out-of-pocket cost to you.",
       },
       {
         q: "What about storm or hail damage?",
-        a: "Panels are tested to industry hail and wind standards. Major weather damage is covered by your homeowner's insurance; Sunrun coordinates repairs on the system itself.",
+        a: "Panels and batteries are tested to industry hail and wind standards. Major weather damage is covered by your homeowner's insurance; Sunrun coordinates repairs on the system itself.",
       },
       {
         q: "Don't panels lose efficiency over time?",
@@ -123,15 +128,15 @@ const CATEGORIES: Category[] = [
     items: [
       {
         q: "What if Sunrun goes out of business?",
-        a: "Sunrun is publicly traded on NASDAQ (ticker: RUN). If the company were ever sold or restructured, your agreement would transfer to the new operator. The panels and your locked rate would not change.",
+        a: "Sunrun is publicly traded on NASDAQ (ticker: RUN). If the company were ever sold or restructured, your agreement would transfer to the new operator. The panels, batteries, and your locked rate would not change.",
       },
       {
         q: "Why do you need my Edison bill?",
         a: "Only to model real numbers using your actual usage. Nothing is sent anywhere — this tool runs entirely on this device and stores no customer information.",
       },
       {
-        q: "Why is the escalator 2.9% by default?",
-        a: "That's Sunrun's standard PPA escalator. Some agreements are offered at 0% — adjust the slider above to match the specific offer in front of you.",
+        q: "Why is the escalator 3.5%?",
+        a: "That's the contractual escalator for every new Sunrun PPA — it isn't a number that varies by home or that gets negotiated. The calculator above uses it automatically.",
       },
     ],
   },
@@ -162,7 +167,6 @@ export default function Page() {
   const [edisonBill, setEdisonBill] = useState(250);
   const [ppaPayment, setPpaPayment] = useState(180);
   const [edisonRate, setEdisonRate] = useState(6);
-  const [ppaEsc, setPpaEsc] = useState(2.9);
   const [modalOpen, setModalOpen] = useState(false);
   const [qaOpen, setQaOpen] = useState(false);
 
@@ -174,12 +178,12 @@ export default function Page() {
     for (let i = 0; i < 25; i++) {
       const y = i + 1;
       edCum += edisonBill * 12 * Math.pow(1 + edisonRate / 100, y - 1);
-      srCum += ppaPayment * 12 * Math.pow(1 + ppaEsc / 100, y - 1);
+      srCum += ppaPayment * 12 * Math.pow(1 + PPA_ESCALATOR / 100, y - 1);
       ed.push(edCum);
       sr.push(srCum);
     }
     return { edisonCumArr: ed, ppaCumArr: sr };
-  }, [edisonBill, ppaPayment, edisonRate, ppaEsc]);
+  }, [edisonBill, ppaPayment, edisonRate]);
 
   const savingsAt = (y: number) => edisonCumArr[y - 1] - ppaCumArr[y - 1];
   const total = savingsAt(25);
@@ -438,25 +442,19 @@ export default function Page() {
           </div>
 
           <div>
-            <div className="flex items-baseline justify-between mb-3">
-              <div className="input-label">PPA annual escalator</div>
-              <div className="slider-value">
-                {ppaEsc.toFixed(1)}
-                <span className="text-slate-500 font-medium">%</span>
-              </div>
+            <div className="input-label mb-2.5">PPA annual escalator</div>
+            <div className="locked-display">
+              <span className="locked-value">
+                {PPA_ESCALATOR.toFixed(1)}
+                <span className="locked-value-unit">%</span>
+              </span>
+              <span className="locked-badge">
+                <LockIcon />
+                Locked
+              </span>
             </div>
-            <input
-              type="range"
-              min={0}
-              max={3.5}
-              step={0.1}
-              value={ppaEsc}
-              onChange={(e) => setPpaEsc(Number(e.target.value))}
-            />
-            <div className="flex justify-between text-[11px] text-slate-600 mt-2.5 font-medium">
-              <span>0%</span>
-              <span className="text-slate-500">per year</span>
-              <span>3.5%</span>
+            <div className="text-[11px] text-slate-500 mt-2 font-medium">
+              Contractual rate. Same for every new home.
             </div>
           </div>
         </div>
@@ -544,10 +542,9 @@ export default function Page() {
                 Sunrun PPA cost in year N
               </div>
               <p className="text-slate-400">
-                Your locked-in PPA payment &times; 12, compounded by the PPA
-                escalator. Sunrun&apos;s standard escalator is 2.9%; many
-                agreements are offered at 0%. Adjust the slider to match the
-                offer in front of you.
+                Your PPA payment &times; 12, compounded by the contractual
+                3.5% annual escalator. Every new Sunrun PPA uses the same
+                escalator — it isn&apos;t a number that varies by home.
               </p>
             </div>
             <div>
@@ -564,9 +561,9 @@ export default function Page() {
                 What this tool does not include
               </p>
               <ul className="list-disc pl-5 space-y-1.5 marker:text-slate-600">
-                <li>Time-of-use rate differences or NEM credits</li>
+                <li>Time-of-use rate differences within Edison&apos;s tariff</li>
                 <li>System production changes from weather or degradation</li>
-                <li>Federal tax credits (PPAs are not owned by the customer)</li>
+                <li>Battery offset of peak-hour Edison usage (a real benefit not modeled here)</li>
                 <li>Home resale impact</li>
               </ul>
               <p className="mt-4">
@@ -762,6 +759,27 @@ function QAModal({ onClose }: { onClose: () => void }) {
         ))}
       </div>
     </ModalShell>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+      <rect
+        x="1.5"
+        y="4.5"
+        width="7"
+        height="5"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.2"
+      />
+      <path
+        d="M3 4.5V3a2 2 0 014 0v1.5"
+        stroke="currentColor"
+        strokeWidth="1.2"
+      />
+    </svg>
   );
 }
 
