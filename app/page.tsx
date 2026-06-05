@@ -40,6 +40,35 @@ const fmt = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
 const YEARS = Array.from({ length: 25 }, (_, i) => i + 1);
 const CARD_YEARS = [1, 5, 10, 20, 25] as const;
 const PPA_OPTIONS = [0, 3.5] as const;
+const LOOKBACK_MAX_YEARS = 12;
+
+/**
+ * Linear-interpolate the SCE residential average rate at a given year/month
+ * using the published anchor points in app/brand.ts. We do not extrapolate
+ * past the most recent anchor (rates outside the published window are
+ * unreliable, especially toward longer look-backs where electricity actually
+ * got cheaper in real terms).
+ */
+function interpolateRate(year: number, month: number): number {
+  const target = year * 12 + (month - 1);
+  const anchors = [...SCE_RATE_ANCHORS]
+    .sort((a, b) => a.year * 12 + a.month - (b.year * 12 + b.month))
+    .map((a) => ({ idx: a.year * 12 + (a.month - 1), rate: a.rate }));
+
+  if (target <= anchors[0].idx) return anchors[0].rate;
+  if (target >= anchors[anchors.length - 1].idx)
+    return anchors[anchors.length - 1].rate;
+
+  for (let i = 0; i < anchors.length - 1; i++) {
+    const lo = anchors[i];
+    const hi = anchors[i + 1];
+    if (target >= lo.idx && target <= hi.idx) {
+      const t = (target - lo.idx) / (hi.idx - lo.idx);
+      return lo.rate + (hi.rate - lo.rate) * t;
+    }
+  }
+  return anchors[anchors.length - 1].rate;
+}
 
 /* ----------------------------- Q&A content ----------------------------- */
 
@@ -184,6 +213,7 @@ export default function Page() {
   const [qaOpen, setQaOpen] = useState(false);
   const [ratesOpen, setRatesOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
+  const [lookbackOpen, setLookbackOpen] = useState(false);
 
   const edBillNum = edisonBill ?? 0;
   const ppaPayNum = ppaPayment ?? 0;
@@ -238,18 +268,20 @@ export default function Page() {
   const headlineRef = useBumpOnChange(total, "pulse");
 
   useEffect(() => {
-    if (!modalOpen && !qaOpen && !ratesOpen && !compareOpen) return;
+    if (!modalOpen && !qaOpen && !ratesOpen && !compareOpen && !lookbackOpen)
+      return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setModalOpen(false);
         setQaOpen(false);
         setRatesOpen(false);
         setCompareOpen(false);
+        setLookbackOpen(false);
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [modalOpen, qaOpen, ratesOpen, compareOpen]);
+  }, [modalOpen, qaOpen, ratesOpen, compareOpen, lookbackOpen]);
 
   const chartData = useMemo(
     () => ({
@@ -391,18 +423,26 @@ export default function Page() {
         </div>
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setLookbackOpen(true)}
+            className="btn-ghost"
+            title="What this usage would have cost in past years"
+          >
+            <HistoryIcon />
+            <span className="hidden md:inline">Look-Back</span>
+            <span className="md:hidden">History</span>
+          </button>
+          <button
             onClick={() => setCompareOpen(true)}
             className="btn-ghost"
             title={`Side-by-side: ${BRAND.utility} vs 3.5% PPA vs 0% PPA`}
           >
             <CompareIcon />
-            <span className="hidden sm:inline">3-Way</span>
-            <span className="sm:hidden">3-Way</span>
+            <span>3-Way</span>
           </button>
           <button onClick={() => setQaOpen(true)} className="btn-ghost">
             <QuestionIcon />
-            <span className="hidden sm:inline">Questions</span>
-            <span className="sm:hidden">Q&A</span>
+            <span className="hidden md:inline">Questions</span>
+            <span className="md:hidden">Q&A</span>
           </button>
         </div>
       </div>
@@ -616,6 +656,13 @@ export default function Page() {
         </button>
         <span className="text-slate-700">·</span>
         <button
+          onClick={() => setLookbackOpen(true)}
+          className="hover:text-slate-200 transition"
+        >
+          Historical look-back
+        </button>
+        <span className="text-slate-700">·</span>
+        <button
           onClick={() => setRatesOpen(true)}
           className="hover:text-slate-200 transition"
         >
@@ -779,6 +826,9 @@ export default function Page() {
           ppa0Cum={ppa0Cum}
         />
       )}
+
+      {/* Historical Look-Back Modal */}
+      {lookbackOpen && <LookbackModal onClose={() => setLookbackOpen(false)} />}
     </main>
   );
 }
@@ -1322,6 +1372,213 @@ function CompareIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
         transform="translate(7 0)"
+      />
+    </svg>
+  );
+}
+
+function LookbackModal({ onClose }: { onClose: () => void }) {
+  const [usage, setUsage] = useState<number | null>(750);
+  const [unit, setUnit] = useState<"month" | "year">("month");
+  const [yearsBack, setYearsBack] = useState(10);
+
+  const usageNum = usage ?? 0;
+  const annualKwh = unit === "month" ? usageNum * 12 : usageNum;
+
+  const now = new Date();
+  const nowYear = now.getFullYear();
+  const nowMonth = now.getMonth() + 1;
+  const thenYear = nowYear - yearsBack;
+
+  const lastAnchor = SCE_RATE_ANCHORS[SCE_RATE_ANCHORS.length - 1];
+  const nowRate = lastAnchor.rate;
+  const thenRate = interpolateRate(thenYear, nowMonth);
+
+  const thenCost = annualKwh * thenRate;
+  const nowCost = annualKwh * nowRate;
+  const delta = nowCost - thenCost;
+  const pctChange =
+    thenRate > 0 ? ((nowRate - thenRate) / thenRate) * 100 : 0;
+
+  return (
+    <ModalShell onClose={onClose} maxWidthClass="max-w-xl">
+      <div className="eyebrow mb-3">Historical look-back</div>
+      <h2 className="text-2xl md:text-[28px] font-semibold text-slate-50 mb-2 tracking-tight">
+        What would this have cost {yearsBack} years ago?
+      </h2>
+      <p className="text-slate-400 text-[14.5px] mb-6">
+        Using your usage and {BRAND.utilityShort}&apos;s actual published
+        residential average rates — not a projection, a factual comparison.
+      </p>
+
+      {/* Inputs */}
+      <div className="space-y-5 mb-6">
+        <div>
+          <div className="input-label mb-2.5">Your usage</div>
+          <div className="flex gap-3 flex-wrap">
+            <div className="input-shell relative flex-1 min-w-[180px]">
+              <input
+                type="number"
+                inputMode="decimal"
+                min={0}
+                value={usage ?? ""}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "") return setUsage(null);
+                  const n = Number(v);
+                  if (!isNaN(n) && n >= 0) setUsage(n);
+                }}
+                onFocus={(e) => e.currentTarget.select()}
+                className="lookback-input"
+                aria-label="Electricity usage"
+              />
+              <span className="lookback-unit">kWh</span>
+            </div>
+            <div className="seg lookback-seg">
+              <button
+                onClick={() => setUnit("month")}
+                className={`seg-btn ${unit === "month" ? "active" : ""}`}
+                aria-pressed={unit === "month"}
+              >
+                /mo
+              </button>
+              <button
+                onClick={() => setUnit("year")}
+                className={`seg-btn ${unit === "year" ? "active" : ""}`}
+                aria-pressed={unit === "year"}
+              >
+                /yr
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-baseline justify-between mb-3">
+            <div className="input-label">Years back</div>
+            <div className="slider-value">
+              {yearsBack}{" "}
+              <span className="text-slate-500 font-medium text-base">
+                {yearsBack === 1 ? "year" : "years"}
+              </span>
+            </div>
+          </div>
+          <input
+            type="range"
+            min={1}
+            max={LOOKBACK_MAX_YEARS}
+            step={1}
+            value={yearsBack}
+            onChange={(e) => setYearsBack(Number(e.target.value))}
+            aria-label="Years back"
+          />
+          <div className="flex justify-between text-[11px] text-slate-600 mt-2.5 font-medium">
+            <span>1 yr</span>
+            <span className="text-slate-500">
+              capped at {LOOKBACK_MAX_YEARS}
+            </span>
+            <span>{LOOKBACK_MAX_YEARS} yrs</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Result panel */}
+      <div className="lookback-result">
+        <div className="grid grid-cols-2 gap-4 mb-5">
+          <div>
+            <div className="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-500 mb-1.5">
+              Cost {yearsBack} yr ago
+            </div>
+            <div className="lookback-amount-then">{fmt(thenCost)}</div>
+            <div className="text-[11px] text-slate-500 mt-1">
+              at ${thenRate.toFixed(3)}/kWh
+            </div>
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-500 mb-1.5">
+              Cost today
+            </div>
+            <div className="lookback-amount-now">{fmt(nowCost)}</div>
+            <div className="text-[11px] text-slate-500 mt-1">
+              at ${nowRate.toFixed(3)}/kWh
+            </div>
+          </div>
+        </div>
+        <div className="hairline mb-5" />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <div className="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-500 mb-1.5">
+              Annual cost change
+            </div>
+            <div className="lookback-delta">
+              {delta >= 0 ? "+" : ""}
+              {fmt(delta)}
+            </div>
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-500 mb-1.5">
+              Rate change
+            </div>
+            <div className="lookback-delta">
+              {pctChange >= 0 ? "+" : ""}
+              {pctChange.toFixed(0)}%
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 text-[12.5px] text-slate-500 leading-relaxed">
+        Based on {BRAND.utilityShort}&apos;s published residential average
+        rates from the{" "}
+        <a
+          href={SOURCES.cpucPao.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="source-link"
+        >
+          {SOURCES.cpucPao.short}
+        </a>
+        . The current value uses the most recent published anchor (
+        {lastAnchor.label}); historical values are linearly interpolated
+        between anchor points:{" "}
+        {SCE_RATE_ANCHORS.map((a) => a.label).join(" → ")}. For exact monthly
+        values see{" "}
+        <a
+          href={SOURCES.sceTariff.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="source-link"
+        >
+          {SOURCES.sceTariff.short}
+        </a>
+        . Look-back is capped at {LOOKBACK_MAX_YEARS} years.
+      </div>
+    </ModalShell>
+  );
+}
+
+function HistoryIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path
+        d="M1 7a6 6 0 1 1 1.76 4.24"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M1 10.5V11a.5.5 0 0 0 .5.5h1.5"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M7 4v3l2 1.5"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
