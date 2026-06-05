@@ -12,6 +12,15 @@ import {
   type ScriptableContext,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
+import {
+  BRAND,
+  DISCLAIMER,
+  COMPLIANCE_NOTE,
+  SOURCES,
+  SCE_RATE_ANCHORS,
+  BILL_COMPOSITION,
+  SELF_CONSUMPTION,
+} from "./brand";
 
 ChartJS.register(
   CategoryScale,
@@ -44,23 +53,23 @@ const CATEGORIES: Category[] = [
     items: [
       {
         q: "Do I own the panels?",
-        a: "No. This is a Power Purchase Agreement (PPA). Sunrun owns and maintains the system; you pay only for the power it produces, at a rate set below your current Edison rate. There is no upfront cost.",
+        a: `No. This is a Power Purchase Agreement (PPA). ${BRAND.provider} owns and maintains the system; you pay only for the power it produces, at a rate set below your current ${BRAND.utility} rate. There is no upfront cost.`,
       },
       {
-        q: "How does this actually save me money?",
-        a: "Your Sunrun rate is locked in and rises by either 0% or 3.5% per year (the only two contract options). Edison's rates have historically risen around 6% per year. The gap compounds over time. The number at the top of this page is that compounded difference over 25 years.",
+        q: "How does this estimate savings?",
+        a: `Your ${BRAND.provider} rate is locked in and rises by either 0% or 3.5% per year (the only two contract options). ${BRAND.utility} rates have historically risen around 6% per year. The gap compounds over time. The figure at the top of this page is the estimated compounded difference over 25 years, based on the inputs you entered.`,
       },
       {
         q: "Does the system include batteries?",
-        a: "Yes. Under California's NEM 3.0 rules, every new Sunrun system includes 1 to 4 home batteries sized to your usage. The batteries store the energy your panels produce during the day so you can use it at night and during peak-rate hours — meaning you pull very little from the grid.",
+        a: `Yes. Under California's NEM 3.0 rules, every new ${BRAND.provider} system includes 1 to 4 home batteries sized to your usage. The batteries store the energy your panels produce during the day so you can use it at night and during peak-rate hours — meaning you pull very little from the grid.`,
       },
       {
         q: "What about cloudy days or nighttime?",
-        a: "Your batteries cover most of it. The system stores the energy your panels produce during the day and runs your home off the battery at night, during cloudy stretches, and during Edison's most expensive peak hours. You stay connected to the grid as a backup, but most homes draw very little from Edison once the system is on.",
+        a: `Your batteries cover most of it. The system stores the energy your panels produce during the day and runs your home off the battery at night, during cloudy stretches, and during ${BRAND.utility}'s most expensive peak hours. You stay connected to the grid as a backup, but most homes draw very little from ${BRAND.utility} once the system is on.`,
       },
       {
         q: "Is there really nothing down?",
-        a: "Correct. Standard Sunrun PPAs are $0 down. Your first payment begins only after the system is installed, inspected by the city, and turned on.",
+        a: `Correct. Standard ${BRAND.provider} PPAs are $0 down. Your first payment begins only after the system is installed, inspected by the city, and turned on.`,
       },
     ],
   },
@@ -70,19 +79,19 @@ const CATEGORIES: Category[] = [
     items: [
       {
         q: "Why not just buy panels outright?",
-        a: "Purchasing requires $25k–$40k in cash upfront and several years of payback before you break even. The federal solar tax credit was eliminated at the end of 2025, so buying no longer comes with the 30% rebate it used to. The PPA exists for homeowners who'd rather skip the upfront cost and start saving on day one.",
+        a: `Purchasing requires $25k–$40k in cash upfront and several years of payback before you break even. The federal solar tax credit was eliminated at the end of 2025, so buying no longer comes with the 30% rebate it used to. The PPA exists for homeowners who'd rather skip the upfront cost and begin offsetting their utility bill on day one.`,
       },
       {
-        q: "What if Edison's rates just stop going up?",
-        a: "It's the fair question to ask, but California has several structural reasons rates keep climbing. Edison is paying out billions in wildfire-related settlements and is required by state law to underground lines, expand vegetation management, and harden the grid through the late 2020s — and the CPUC lets those costs flow into rates. On top of that, AI and data center demand is the fastest-growing load in the state, EVs and heat pumps are shifting more energy onto the grid, and California's 2045 clean-energy mandate requires a massive transmission and storage buildout. Edison residential rates have roughly doubled since 2014, and the CPUC has already approved further increases through 2027. Even if you assume only 3–4% per year going forward (well below the actual trend), the math still favors solar.",
+        q: `What if ${BRAND.utility}'s rates just stop going up?`,
+        a: `It's the fair question to ask, but California has several structural reasons rates keep climbing. ${BRAND.utility} is paying out billions in wildfire-related settlements and is required by state law to underground lines, expand vegetation management, and harden the grid through the late 2020s — and the CPUC lets those costs flow into rates. On top of that, AI and data center demand is the fastest-growing load in the state, EVs and heat pumps are shifting more energy onto the grid, and California's 2045 clean-energy mandate requires a massive transmission and storage buildout. ${BRAND.utilityShort} residential rates have roughly doubled since 2014, and the CPUC has already approved further increases through 2027. Even if you assume only 3–4% per year going forward (well below the actual trend), the math still favors solar.`,
       },
       {
-        q: "Will my Sunrun payment go up?",
-        a: "Yes — by either 0% or 3.5% per year, depending on which contract you sign. Both are locked in writing for 25 years and are well below Edison's typical annual increases.",
+        q: `Will my ${BRAND.provider} payment go up?`,
+        a: `Yes — by either 0% or 3.5% per year, depending on which contract you sign. Both are locked in writing for 25 years and are well below ${BRAND.utility}'s typical annual increases.`,
       },
       {
         q: "What's the catch?",
-        a: "The honest tradeoff: you don't own the panels, and you commit for 25 years (the agreement transfers if you move). In exchange, you pay nothing upfront, lock in a rate below Edison's for the life of the system, and Sunrun handles all maintenance.",
+        a: `The honest tradeoff: you don't own the panels, and you commit for 25 years (the agreement transfers if you move). In exchange, you pay nothing upfront, lock in a rate below ${BRAND.utility}'s for the life of the system, and ${BRAND.provider} handles all maintenance.`,
       },
     ],
   },
@@ -92,15 +101,15 @@ const CATEGORIES: Category[] = [
     items: [
       {
         q: "What if I sell my home?",
-        a: "The agreement transfers to the new owner — Sunrun handles the paperwork at no cost to you. Most buyers view the below-Edison rate as a benefit.",
+        a: `The agreement transfers to the new owner — ${BRAND.provider} handles the paperwork at no cost to you. Most buyers view the below-${BRAND.utility} rate as a benefit.`,
       },
       {
         q: "Will solar hurt my resale value?",
-        a: "Independent studies of California homes have shown solar homes — both owned and leased — generally sell for the same or more than comparable non-solar homes. The new owner inherits the same low rate you locked in.",
+        a: `Independent studies of California homes have shown solar homes — both owned and leased — generally sell for the same or more than comparable non-solar homes. The new owner inherits the same locked-in rate.`,
       },
       {
         q: "What if I move in just a few years?",
-        a: "Three options when you sell: transfer the agreement to the buyer (most common), prepay the remainder, or in some cases relocate the system. Sunrun handles the transfer process.",
+        a: `Three options when you sell: transfer the agreement to the buyer (most common), prepay the remainder, or in some cases relocate the system. ${BRAND.provider} handles the transfer process.`,
       },
     ],
   },
@@ -110,15 +119,15 @@ const CATEGORIES: Category[] = [
     items: [
       {
         q: "Who fixes things if they break?",
-        a: "Sunrun. Because they own the system, they cover all repairs, inverter and battery replacement, system monitoring, and roof-penetration warranties for the entire 25 years. No out-of-pocket cost to you.",
+        a: `${BRAND.provider}. Because they own the system, they cover all repairs, inverter and battery replacement, system monitoring, and roof-penetration warranties for the entire 25 years. No out-of-pocket cost to you.`,
       },
       {
         q: "What about storm or hail damage?",
-        a: "Panels and batteries are tested to industry hail and wind standards. Major weather damage is covered by your homeowner's insurance; Sunrun coordinates repairs on the system itself.",
+        a: `Panels and batteries are tested to industry hail and wind standards. Major weather damage is covered by your homeowner's insurance; ${BRAND.provider} coordinates repairs on the system itself.`,
       },
       {
         q: "Don't panels lose efficiency over time?",
-        a: "Yes — about 0.5% per year. Sunrun's production guarantee covers underperformance, so if the system produces less than promised, they compensate the difference.",
+        a: `Yes — about 0.5% per year. ${BRAND.provider}'s production guarantee covers underperformance, so if the system produces less than promised, they compensate the difference.`,
       },
     ],
   },
@@ -127,16 +136,18 @@ const CATEGORIES: Category[] = [
     label: "The company",
     items: [
       {
-        q: "What if Sunrun goes out of business?",
-        a: "Sunrun is publicly traded on NASDAQ (ticker: RUN). If the company were ever sold or restructured, your agreement would transfer to the new operator. The panels, batteries, and your locked rate would not change.",
+        q: `What if ${BRAND.provider} goes out of business?`,
+        a: `${BRAND.provider} is publicly traded on NASDAQ${
+          BRAND.providerTicker ? ` (ticker: ${BRAND.providerTicker})` : ""
+        }. If the company were ever sold or restructured, your agreement would transfer to the new operator. The panels, batteries, and your locked rate would not change.`,
       },
       {
-        q: "Why do you need my Edison bill?",
-        a: "Only to model real numbers using your actual usage. Nothing is sent anywhere — this tool runs entirely on this device and stores no customer information.",
+        q: `Why do you need my ${BRAND.utility} bill?`,
+        a: `Only to model real numbers using your actual usage. Nothing is sent anywhere — this tool runs entirely on this device and stores no customer information.`,
       },
       {
         q: "Why does the calculator only show 0% and 3.5%?",
-        a: "Those are the only two escalators Sunrun writes into new PPAs — there's no other value to choose. 3.5% is the standard option; 0% (flat for 25 years) is offered to qualifying homes. Toggle between them above to see how each plays out.",
+        a: `Those are the only two escalators ${BRAND.provider} writes into new PPAs — there's no other value to choose. 3.5% is the standard option; 0% (flat for 25 years) is offered to qualifying homes. Toggle between them above to see how each plays out.`,
       },
     ],
   },
@@ -168,6 +179,7 @@ export default function Page() {
   const [ppaPayment, setPpaPayment] = useState<number | null>(180);
   const [edisonRate, setEdisonRate] = useState(6);
   const [ppaEsc, setPpaEsc] = useState<number>(3.5);
+  const [withBattery, setWithBattery] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [qaOpen, setQaOpen] = useState(false);
   const [ratesOpen, setRatesOpen] = useState(false);
@@ -176,6 +188,10 @@ export default function Page() {
   const edBillNum = edisonBill ?? 0;
   const ppaPayNum = ppaPayment ?? 0;
 
+  const residualPct = withBattery
+    ? SELF_CONSUMPTION.solarBatteryResidualPct / 100
+    : SELF_CONSUMPTION.solarOnlyResidualPct / 100;
+
   const { edisonCumArr, ppaCumArr } = useMemo(() => {
     const ed: number[] = [];
     const sr: number[] = [];
@@ -183,13 +199,19 @@ export default function Page() {
     let srCum = 0;
     for (let i = 0; i < 25; i++) {
       const y = i + 1;
-      edCum += edBillNum * 12 * Math.pow(1 + edisonRate / 100, y - 1);
-      srCum += ppaPayNum * 12 * Math.pow(1 + ppaEsc / 100, y - 1);
+      const edYear = edBillNum * 12 * Math.pow(1 + edisonRate / 100, y - 1);
+      const ppaYear = ppaPayNum * 12 * Math.pow(1 + ppaEsc / 100, y - 1);
+      // NEM 3.0 residual: under net billing exports are credited below
+      // retail, so the customer still pays the utility some share of their
+      // pre-solar bill. The residual grows with the utility rate.
+      const residualYear = residualPct * edYear;
+      edCum += edYear;
+      srCum += ppaYear + residualYear;
       ed.push(edCum);
       sr.push(srCum);
     }
     return { edisonCumArr: ed, ppaCumArr: sr };
-  }, [edBillNum, ppaPayNum, edisonRate, ppaEsc]);
+  }, [edBillNum, ppaPayNum, edisonRate, ppaEsc, residualPct]);
 
   const { ppa35Cum, ppa0Cum } = useMemo(() => {
     const a: number[] = [];
@@ -198,13 +220,15 @@ export default function Page() {
     let bc = 0;
     for (let i = 0; i < 25; i++) {
       const y = i + 1;
-      ac += ppaPayNum * 12 * Math.pow(1.035, y - 1);
-      bc += ppaPayNum * 12;
+      const edYear = edBillNum * 12 * Math.pow(1 + edisonRate / 100, y - 1);
+      const residualYear = residualPct * edYear;
+      ac += ppaPayNum * 12 * Math.pow(1.035, y - 1) + residualYear;
+      bc += ppaPayNum * 12 + residualYear;
       a.push(ac);
       b.push(bc);
     }
     return { ppa35Cum: a, ppa0Cum: b };
-  }, [ppaPayNum]);
+  }, [ppaPayNum, edBillNum, edisonRate, residualPct]);
 
   const savingsAt = (y: number) => edisonCumArr[y - 1] - ppaCumArr[y - 1];
   const total = savingsAt(25);
@@ -232,7 +256,7 @@ export default function Page() {
       labels: YEARS,
       datasets: [
         {
-          label: "Edison",
+          label: BRAND.utility,
           data: edisonCumArr,
           borderColor: "#F87171",
           backgroundColor: "rgba(248, 113, 113, 0)",
@@ -247,7 +271,7 @@ export default function Page() {
           order: 1,
         },
         {
-          label: "Sunrun",
+          label: BRAND.provider,
           data: ppaCumArr,
           borderColor: "#10B981",
           backgroundColor: (ctx: ScriptableContext<"line">) => {
@@ -307,12 +331,12 @@ export default function Page() {
               afterBody: (items: any[]) => {
                 if (items.length < 2) return "";
                 const ed =
-                  items.find((i) => i.dataset.label === "Edison")?.parsed.y ??
+                  items.find((i) => i.dataset.label === BRAND.utility)?.parsed.y ??
                   0;
                 const sr =
-                  items.find((i) => i.dataset.label === "Sunrun")?.parsed.y ??
+                  items.find((i) => i.dataset.label === BRAND.provider)?.parsed.y ??
                   0;
-                return "\n Savings: " + fmt(ed - sr);
+                return "\n Estimated savings: " + fmt(ed - sr);
               },
             },
           },
@@ -361,38 +385,49 @@ export default function Page() {
   return (
     <main className="max-w-[1380px] mx-auto px-5 md:px-10 py-7 md:py-10 min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between mb-12 md:mb-16 gap-3">
+      <div className="flex items-center justify-between mb-6 md:mb-10 gap-3">
         <div className="text-[13px] font-semibold tracking-[0.18em] uppercase text-slate-300">
-          Solar <span className="text-slate-600 mx-1.5">/</span> Edison
+          Solar <span className="text-slate-600 mx-1.5">/</span> {BRAND.utility}
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setCompareOpen(true)}
             className="btn-ghost"
-            title="Side-by-side: Edison vs 3.5% PPA vs 0% PPA"
+            title={`Side-by-side: ${BRAND.utility} vs 3.5% PPA vs 0% PPA`}
           >
             <CompareIcon />
-            <span className="hidden sm:inline">3-Way Comparison</span>
-            <span className="sm:hidden">Compare</span>
+            <span className="hidden sm:inline">3-Way</span>
+            <span className="sm:hidden">3-Way</span>
           </button>
           <button onClick={() => setQaOpen(true)} className="btn-ghost">
             <QuestionIcon />
-            <span className="hidden sm:inline">Common Questions</span>
-            <span className="sm:hidden">Questions</span>
+            <span className="hidden sm:inline">Questions</span>
+            <span className="sm:hidden">Q&A</span>
           </button>
+        </div>
+      </div>
+
+      {/* Compliance pill */}
+      <div className="flex justify-center mb-8 md:mb-10">
+        <div className="compliance-pill">
+          <span className="compliance-dot" />
+          {COMPLIANCE_NOTE}
         </div>
       </div>
 
       {/* Headline */}
       <section className="text-center mb-12 md:mb-16">
-        <div className="eyebrow mb-5">Projected 25-Year Savings</div>
+        <div className="eyebrow mb-5">Estimated 25-Year Savings</div>
         <div ref={headlineRef} className="headline">
           {fmt(total)}
+        </div>
+        <div className="mt-3 text-[12px] text-slate-500">
+          Estimate based on the inputs and assumptions below.
         </div>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
           <div className="stat-pill">
             <span className="dot-red" />
-            <span className="label">Edison</span>
+            <span className="label">{BRAND.utility}</span>
             <span className="value">{fmt(edisonTotal)}</span>
           </div>
           <div className="text-slate-600 text-xs font-semibold tracking-wider uppercase hidden sm:block">
@@ -400,7 +435,7 @@ export default function Page() {
           </div>
           <div className="stat-pill">
             <span className="dot-green" />
-            <span className="label">Sunrun</span>
+            <span className="label">{BRAND.provider}</span>
             <span className="value">{fmt(sunrunTotal)}</span>
           </div>
         </div>
@@ -410,7 +445,7 @@ export default function Page() {
       <section className="panel p-5 md:p-7 mb-6 md:mb-7">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-7">
           <div>
-            <div className="input-label mb-2.5">Current Edison bill</div>
+            <div className="input-label mb-2.5">Current {BRAND.utility} bill</div>
             <div className="input-shell relative">
               <span className="money-prefix">$</span>
               <input
@@ -435,7 +470,7 @@ export default function Page() {
           </div>
 
           <div>
-            <div className="input-label mb-2.5">Sunrun PPA payment</div>
+            <div className="input-label mb-2.5">{BRAND.provider} PPA payment</div>
             <div className="input-shell relative">
               <span className="money-prefix">$</span>
               <input
@@ -461,25 +496,37 @@ export default function Page() {
 
           <div>
             <div className="flex items-baseline justify-between mb-3">
-              <div className="input-label">Edison rate increase</div>
+              <div className="input-label">{BRAND.utility} rate increase</div>
               <div className="slider-value">
                 {edisonRate.toFixed(1)}
                 <span className="text-slate-500 font-medium">%</span>
               </div>
             </div>
-            <input
-              type="range"
-              min={3}
-              max={10}
-              step={0.1}
-              value={edisonRate}
-              onChange={(e) => setEdisonRate(Number(e.target.value))}
-            />
+            <div className="rate-slider-wrap">
+              <div className="rate-supported-band" aria-hidden="true" />
+              <input
+                type="range"
+                min={3}
+                max={10}
+                step={0.1}
+                value={edisonRate}
+                onChange={(e) => setEdisonRate(Number(e.target.value))}
+                aria-label={`${BRAND.utility} rate increase, percent per year`}
+              />
+            </div>
             <div className="flex justify-between text-[11px] text-slate-600 mt-2.5 font-medium">
               <span>3%</span>
-              <span className="text-slate-500">per year</span>
+              <span className="text-emerald-400/80">5–7.5% supported</span>
               <span>10%</span>
             </div>
+            {edisonRate >= 8 ? (
+              <div className="rate-warn mt-3" role="status">
+                <WarnIcon />
+                <span>
+                  Above CPUC-authorized base — for illustration only.
+                </span>
+              </div>
+            ) : null}
             <button
               onClick={() => setRatesOpen(true)}
               className="mt-3 text-[12px] text-slate-400 hover:text-slate-100 transition inline-flex items-center gap-1.5 font-medium"
@@ -513,7 +560,7 @@ export default function Page() {
               ))}
             </div>
             <div className="text-[11px] text-slate-500 mt-2 font-medium">
-              The only two contractual rates Sunrun offers.
+              The only two contractual rates {BRAND.provider} offers.
             </div>
           </div>
         </div>
@@ -528,11 +575,11 @@ export default function Page() {
           <div className="flex items-center gap-5 text-[13px]">
             <span className="text-slate-300 font-medium flex items-center gap-2">
               <span className="dot-red" />
-              Edison
+              {BRAND.utility}
             </span>
             <span className="text-slate-300 font-medium flex items-center gap-2">
               <span className="dot-green" />
-              Sunrun
+              {BRAND.provider}
             </span>
           </div>
         </div>
@@ -554,15 +601,18 @@ export default function Page() {
             <SavingsCard key={y} year={y} amount={savingsAt(y)} />
           ))}
         </div>
+        <div className="mt-3 text-[11px] text-slate-500 text-center">
+          Estimates only — not a guarantee of savings.
+        </div>
       </section>
 
-      {/* Footer */}
-      <footer className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pb-8 text-[13px] text-slate-500">
+      {/* Footer links */}
+      <footer className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pb-6 text-[13px] text-slate-500">
         <button
           onClick={() => setModalOpen(true)}
           className="hover:text-slate-200 transition"
         >
-          Assumptions
+          Assumptions &amp; sources
         </button>
         <span className="text-slate-700">·</span>
         <button
@@ -587,62 +637,127 @@ export default function Page() {
         </button>
       </footer>
 
+      {/* Persistent disclaimer band */}
+      <div className="disclaimer-band">
+        <button
+          onClick={() => setModalOpen(true)}
+          className="text-left hover:text-slate-200 transition"
+          aria-label="Open assumptions and sources"
+        >
+          {DISCLAIMER}
+        </button>
+      </div>
+
       {/* Assumptions Modal */}
       {modalOpen && (
         <ModalShell onClose={() => setModalOpen(false)} maxWidthClass="max-w-xl">
           <div className="eyebrow mb-3">Methodology</div>
           <h2 className="text-2xl md:text-[28px] font-semibold text-slate-50 mb-5 tracking-tight">
-            How the math works
+            Assumptions &amp; methodology
           </h2>
           <div className="space-y-5 text-slate-300 leading-relaxed text-[15px]">
             <p>
               We model each year of cost independently, then add them up to
-              get a running total.
+              get a running total. Every number on this page is an estimate
+              based on the inputs you entered and the sources below.
             </p>
             <div>
               <div className="font-semibold text-slate-100 mb-1.5">
-                Edison cost in year N
+                {BRAND.utility} cost in year N
               </div>
               <p className="text-slate-400">
-                Your current monthly bill &times; 12, then compounded by the
-                Edison rate increase for each year. A $250/mo bill with 6%
-                annual increases costs $3,000 in year 1 and roughly $3,180 in
-                year 2.
+                Your current monthly bill &times; 12, compounded by the
+                {" "}{BRAND.utility} rate increase you selected. A $250/mo
+                bill with 6% annual increases is about $3,000 in year 1 and
+                $3,180 in year 2.
               </p>
             </div>
             <div>
               <div className="font-semibold text-slate-100 mb-1.5">
-                Sunrun PPA cost in year N
+                {BRAND.provider} PPA cost in year N
               </div>
               <p className="text-slate-400">
                 Your PPA payment &times; 12, compounded by whichever
-                escalator you select above (0% or 3.5% — the only two
-                contractual options on a new Sunrun PPA).
+                escalator you select (0% or 3.5% — the only two contractual
+                options on a new {BRAND.provider} PPA), plus a residual
+                {" "}{BRAND.utility} bill modeling imperfect self-consumption
+                under NEM 3.0. With a battery we use a {SELF_CONSUMPTION.solarBatteryResidualPct}% residual; solar-only uses
+                {" "}{SELF_CONSUMPTION.solarOnlyResidualPct}% (rough industry
+                averages for self-consumption ratios).
               </p>
             </div>
             <div>
               <div className="font-semibold text-slate-100 mb-1.5">
-                Cumulative savings
+                Estimated cumulative savings
               </div>
               <p className="text-slate-400">
-                The difference between the running totals at each year. This
-                is the green area on the chart.
+                The difference between the {BRAND.utility} running total and
+                the {BRAND.provider} running total (including the residual)
+                at each year. The green area on the chart is the gap.
               </p>
+            </div>
+            <div>
+              <div className="font-semibold text-slate-100 mb-1.5">
+                Historical {BRAND.utilityShort} rate interpolation
+              </div>
+              <p className="text-slate-400">
+                The look-back tool linearly interpolates between published
+                anchor points: {SCE_RATE_ANCHORS.map((a) => a.label).join(
+                  " → "
+                )}. Exact monthly figures are available in {BRAND.utility}&apos;s
+                historical tariff books.
+              </p>
+            </div>
+            <div className="border-t border-white/10 pt-5">
+              <div className="font-semibold text-slate-100 mb-2.5">
+                Cited sources
+              </div>
+              <ul className="space-y-2 text-[13.5px]">
+                {Object.values(SOURCES).map((s) => (
+                  <li key={s.url}>
+                    <a
+                      href={s.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="source-link"
+                    >
+                      {s.label}
+                      <svg
+                        width="10"
+                        height="10"
+                        viewBox="0 0 10 10"
+                        fill="none"
+                        className="ml-1.5 inline-block opacity-60"
+                      >
+                        <path
+                          d="M3 1h6v6M9 1L1 9"
+                          stroke="currentColor"
+                          strokeWidth="1.3"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </div>
             <div className="border-t border-white/10 pt-5 text-[13px] text-slate-500">
               <p className="font-semibold text-slate-300 mb-2">
                 What this tool does not include
               </p>
               <ul className="list-disc pl-5 space-y-1.5 marker:text-slate-600">
-                <li>Time-of-use rate differences within Edison&apos;s tariff</li>
+                <li>
+                  Time-of-use rate differences within {BRAND.utility}&apos;s
+                  tariff
+                </li>
                 <li>System production changes from weather or degradation</li>
-                <li>Battery offset of peak-hour Edison usage (a real benefit not modeled here)</li>
+                <li>
+                  Federal commercial tax credit (Section 48E) — flagged for
+                  verification before relying on it
+                </li>
                 <li>Home resale impact</li>
               </ul>
-              <p className="mt-4">
-                Numbers are illustrative — your signed agreement governs
-                actual payments.
-              </p>
+              <p className="mt-4">{DISCLAIMER}</p>
             </div>
           </div>
         </ModalShell>
@@ -850,18 +965,20 @@ function QAModal({ onClose }: { onClose: () => void }) {
 }
 
 function RatesModal({ onClose }: { onClose: () => void }) {
-  const reasons = [
+  const reasons: { h: string; b: string; src?: keyof typeof SOURCES }[] = [
     {
       h: "Wildfire liability and grid hardening",
-      b: "Southern California Edison has paid billions in settlements for past fires and is now required by California (AB 1054 and CPUC orders) to underground distribution lines, expand vegetation management, and replace aging substations through the late 2020s. Those infrastructure costs are recovered through rates.",
+      b: `Southern California ${BRAND.utility} has paid billions in settlements for past fires and is required by California (AB 1054 and CPUC orders) to underground distribution lines, expand vegetation management, and replace aging substations through the late 2020s. Those costs flow into rates.`,
+      src: "sceGrc",
     },
     {
       h: "Data centers and AI",
-      b: "California has one of the fastest-growing data center loads in the country. Bringing new generation and transmission online to serve AI infrastructure is a multi-decade investment that's spread across every ratepayer.",
+      b: "California has one of the fastest-growing data center loads in the country. Bringing new generation and transmission online to serve AI infrastructure is a multi-decade investment spread across every ratepayer.",
+      src: "cpucPao",
     },
     {
       h: "Electrification of everything",
-      b: "EVs, induction cooking, and heat pumps are shifting energy use from gas onto the electric grid. Per-home electricity demand is rising even as overall household energy use becomes more efficient.",
+      b: "EVs, induction cooking, and heat pumps are shifting energy from gas onto the electric grid. Per-home electricity demand is rising even as overall household energy efficiency improves.",
     },
     {
       h: "100% clean energy by 2045",
@@ -869,7 +986,13 @@ function RatesModal({ onClose }: { onClose: () => void }) {
     },
     {
       h: "What the numbers have actually done",
-      b: "Edison residential rates have roughly doubled since 2014 — averaging well over 6% per year. The CPUC has already approved additional increases through 2027 to fund ongoing fire mitigation and grid investments.",
+      b: `${BRAND.utilityShort} residential average rates roughly doubled from about $0.171/kWh in Jan 2015 to about $0.353/kWh in Oct 2025 (CPUC Public Advocates Office) — averaging well over 6% per year. The CPUC's 2025 General Rate Case authorizes additional base increases through 2027.`,
+      src: "cpucPao",
+    },
+    {
+      h: "Base vs. realized — be honest",
+      b: `${BRAND.utility}'s 2025 GRC base bill impacts are modeled at roughly 2.7% / 2.6% / 2.7% for 2026–2028. Realized 2025 increases ran ~10–13% because wildfire surcharges, FERC transmission adjustments, and cost-recovery accounts layer on top of the base. The slider above lets you pick where to anchor your estimate.`,
+      src: "sceGrc",
     },
   ];
 
@@ -877,12 +1000,12 @@ function RatesModal({ onClose }: { onClose: () => void }) {
     <ModalShell onClose={onClose} maxWidthClass="max-w-2xl">
       <div className="eyebrow mb-3">Rate context</div>
       <h2 className="text-2xl md:text-[28px] font-semibold text-slate-50 mb-2 tracking-tight">
-        Why Edison rates keep climbing
+        Why {BRAND.utility} rates keep climbing
       </h2>
       <p className="text-slate-400 text-[14.5px] leading-relaxed mb-6">
-        California has structural reasons electricity costs keep rising — not
-        flatten. Even if you assume a much more conservative increase, the
-        math still favors solar.
+        California has structural reasons electricity costs keep rising. Even
+        a conservative assumption still shows estimated savings — slide the
+        rate to 3–4% to test.
       </p>
 
       <div className="space-y-5">
@@ -895,6 +1018,19 @@ function RatesModal({ onClose }: { onClose: () => void }) {
               </div>
               <div className="text-slate-400 text-[14px] leading-relaxed">
                 {r.b}
+                {r.src ? (
+                  <>
+                    {" "}
+                    <a
+                      href={SOURCES[r.src].url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="source-link text-[12.5px]"
+                    >
+                      {SOURCES[r.src].short}
+                    </a>
+                  </>
+                ) : null}
               </div>
             </div>
           </div>
@@ -902,9 +1038,9 @@ function RatesModal({ onClose }: { onClose: () => void }) {
       </div>
 
       <div className="mt-7 pt-5 border-t border-white/10 text-slate-400 text-[13.5px] leading-relaxed">
-        Want to be conservative? Slide the Edison rate down to 3 or 4%. The
-        comparison still favors solar in nearly every case — because the PPA
-        rate is below today&apos;s bill and grows slower regardless.
+        Want to be conservative? Slide the {BRAND.utility} rate down to 3 or
+        4%. The comparison still favors solar in nearly every case — the PPA
+        rate starts below today&apos;s bill and grows slower regardless.
       </div>
     </ModalShell>
   );
@@ -934,7 +1070,7 @@ function CompareModal({
       labels: years,
       datasets: [
         {
-          label: "Edison",
+          label: BRAND.utility,
           data: edisonCumArr,
           borderColor: "#F87171",
           backgroundColor: "rgba(248, 113, 113, 0)",
@@ -949,7 +1085,7 @@ function CompareModal({
           order: 1,
         },
         {
-          label: "Sunrun · 3.5% escalator",
+          label: `${BRAND.provider} · 3.5% escalator`,
           data: ppa35Cum,
           borderColor: "#10B981",
           backgroundColor: "rgba(16, 185, 129, 0)",
@@ -964,7 +1100,7 @@ function CompareModal({
           order: 2,
         },
         {
-          label: "Sunrun · 0% escalator",
+          label: `${BRAND.provider} · 0% escalator`,
           data: ppa0Cum,
           borderColor: "#5EEAD4",
           backgroundColor: "rgba(94, 234, 212, 0)",
@@ -1053,18 +1189,19 @@ function CompareModal({
         3-way comparison
       </h2>
       <p className="text-slate-400 text-[14.5px] mb-5">
-        How your numbers play out across all three options over 25 years.
+        Estimated cost paths for all three options over 25 years, based on
+        the inputs you entered.
       </p>
 
       {/* Legend pills */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <span className="cmp-legend">
           <span className="cmp-dot" style={{ background: "#F87171" }} />
-          Edison
+          {BRAND.utility}
         </span>
         <span className="cmp-legend">
           <span className="cmp-dot" style={{ background: "#10B981" }} />
-          Sunrun · 3.5%
+          {BRAND.provider} · 3.5%
         </span>
         <span className="cmp-legend">
           <span
@@ -1074,7 +1211,7 @@ function CompareModal({
               border: "1.5px dashed #5EEAD4",
             }}
           />
-          Sunrun · 0%
+          {BRAND.provider} · 0%
         </span>
       </div>
 
@@ -1084,19 +1221,25 @@ function CompareModal({
       </div>
 
       {/* 25-year totals */}
-      <div className="qa-cat-label !pt-0 !pb-3">25-year totals</div>
+      <div className="qa-cat-label !pt-0 !pb-3">Estimated 25-year totals</div>
       <div className="grid grid-cols-3 gap-3 mb-6">
-        <TotalsCard color="#F87171" label="Edison" amount={edisonTotal} />
+        <TotalsCard color="#F87171" label={BRAND.utility} amount={edisonTotal} />
         <TotalsCard
           color="#10B981"
-          label="Sunrun · 3.5%"
+          label={`${BRAND.provider} · 3.5%`}
           amount={ppa35Total}
         />
-        <TotalsCard color="#5EEAD4" label="Sunrun · 0%" amount={ppa0Total} />
+        <TotalsCard
+          color="#5EEAD4"
+          label={`${BRAND.provider} · 0%`}
+          amount={ppa0Total}
+        />
       </div>
 
-      {/* Savings vs Edison */}
-      <div className="qa-cat-label !pt-0 !pb-3">Savings vs Edison</div>
+      {/* Savings vs Utility */}
+      <div className="qa-cat-label !pt-0 !pb-3">
+        Estimated savings vs {BRAND.utility}
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="cmp-save-row">
           <div>
@@ -1127,7 +1270,8 @@ function CompareModal({
       <div className="mt-5 text-[12.5px] text-slate-500 leading-relaxed">
         Assumes the same starting monthly PPA payment in both scenarios. Real
         agreements with a 0% escalator sometimes start at a slightly higher
-        monthly rate to lock in the flat curve.
+        monthly rate to lock in the flat curve. Estimates only — not a
+        guarantee.
       </div>
     </ModalShell>
   );
@@ -1179,6 +1323,26 @@ function CompareIcon() {
         strokeLinejoin="round"
         transform="translate(7 0)"
       />
+    </svg>
+  );
+}
+
+function WarnIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path
+        d="M6 1.5L11 10.5H1L6 1.5Z"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6 5V7.5"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
+      <circle cx="6" cy="9" r="0.6" fill="currentColor" />
     </svg>
   );
 }
