@@ -214,6 +214,64 @@ export default function Page() {
   const [ratesOpen, setRatesOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [lookbackOpen, setLookbackOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+
+  // URL state sync (Phase 5)
+  const urlMounted = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const p = new URLSearchParams(window.location.search);
+    const b = p.get("b");
+    if (b !== null) {
+      if (b === "") setEdisonBill(null);
+      else {
+        const n = Number(b);
+        if (Number.isFinite(n) && n >= 0) setEdisonBill(n);
+      }
+    }
+    const pp = p.get("p");
+    if (pp !== null) {
+      if (pp === "") setPpaPayment(null);
+      else {
+        const n = Number(pp);
+        if (Number.isFinite(n) && n >= 0) setPpaPayment(n);
+      }
+    }
+    const r = p.get("r");
+    if (r !== null) {
+      const n = Number(r);
+      if (Number.isFinite(n)) setEdisonRate(Math.min(10, Math.max(3, n)));
+    }
+    const e = p.get("e");
+    if (e !== null) {
+      const n = Number(e);
+      if (n === 0 || n === 3.5) setPpaEsc(n);
+    }
+    const bat = p.get("bat");
+    if (bat === "1") setWithBattery(true);
+    if (bat === "0") setWithBattery(false);
+    // Defer marking "mounted" until after the current task so the encoder's
+    // mount-time fire (with default state) does not clobber the URL params
+    // we just decoded.
+    const id = setTimeout(() => {
+      urlMounted.current = true;
+    }, 0);
+    return () => clearTimeout(id);
+  }, []);
+
+  useEffect(() => {
+    if (!urlMounted.current) return;
+    if (typeof window === "undefined") return;
+    const p = new URLSearchParams();
+    if (edisonBill !== null) p.set("b", String(edisonBill));
+    if (ppaPayment !== null) p.set("p", String(ppaPayment));
+    p.set("r", edisonRate.toString());
+    p.set("e", ppaEsc.toString());
+    p.set("bat", withBattery ? "1" : "0");
+    const url = window.location.pathname + "?" + p.toString();
+    window.history.replaceState(null, "", url);
+  }, [edisonBill, ppaPayment, edisonRate, ppaEsc, withBattery]);
 
   const edBillNum = edisonBill ?? 0;
   const ppaPayNum = ppaPayment ?? 0;
@@ -268,7 +326,14 @@ export default function Page() {
   const headlineRef = useBumpOnChange(total, "pulse");
 
   useEffect(() => {
-    if (!modalOpen && !qaOpen && !ratesOpen && !compareOpen && !lookbackOpen)
+    if (
+      !modalOpen &&
+      !qaOpen &&
+      !ratesOpen &&
+      !compareOpen &&
+      !lookbackOpen &&
+      !shareOpen
+    )
       return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -277,11 +342,12 @@ export default function Page() {
         setRatesOpen(false);
         setCompareOpen(false);
         setLookbackOpen(false);
+        setShareOpen(false);
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [modalOpen, qaOpen, ratesOpen, compareOpen, lookbackOpen]);
+  }, [modalOpen, qaOpen, ratesOpen, compareOpen, lookbackOpen, shareOpen]);
 
   const chartData = useMemo(
     () => ({
@@ -421,7 +487,7 @@ export default function Page() {
         <div className="text-[13px] font-semibold tracking-[0.18em] uppercase text-slate-300">
           Solar <span className="text-slate-600 mx-1.5">/</span> {BRAND.utility}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           <button
             onClick={() => setLookbackOpen(true)}
             className="btn-ghost"
@@ -429,7 +495,6 @@ export default function Page() {
           >
             <HistoryIcon />
             <span className="hidden md:inline">Look-Back</span>
-            <span className="md:hidden">History</span>
           </button>
           <button
             onClick={() => setCompareOpen(true)}
@@ -442,7 +507,14 @@ export default function Page() {
           <button onClick={() => setQaOpen(true)} className="btn-ghost">
             <QuestionIcon />
             <span className="hidden md:inline">Questions</span>
-            <span className="md:hidden">Q&A</span>
+          </button>
+          <button
+            onClick={() => setShareOpen(true)}
+            className="btn-ghost btn-ghost-primary"
+            title="Share or text these results"
+          >
+            <ShareIcon />
+            <span>Share</span>
           </button>
         </div>
       </div>
@@ -943,6 +1015,19 @@ export default function Page() {
 
       {/* Historical Look-Back Modal */}
       {lookbackOpen && <LookbackModal onClose={() => setLookbackOpen(false)} />}
+
+      {/* Share Modal */}
+      {shareOpen && (
+        <ShareModal
+          onClose={() => setShareOpen(false)}
+          edisonBill={edBillNum}
+          ppaPayment={ppaPayNum}
+          edisonRate={edisonRate}
+          ppaEsc={ppaEsc}
+          withBattery={withBattery}
+          totalSavings={total}
+        />
+      )}
     </main>
   );
 }
@@ -1691,6 +1776,190 @@ function HistoryIcon() {
         d="M7 4v3l2 1.5"
         stroke="currentColor"
         strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ShareModal({
+  onClose,
+  edisonBill,
+  ppaPayment,
+  edisonRate,
+  ppaEsc,
+  withBattery,
+  totalSavings,
+}: {
+  onClose: () => void;
+  edisonBill: number;
+  ppaPayment: number;
+  edisonRate: number;
+  ppaEsc: number;
+  withBattery: boolean;
+  totalSavings: number;
+}) {
+  const [copied, setCopied] = useState(false);
+  const [hasNativeShare, setHasNativeShare] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setShareUrl(window.location.href);
+    setHasNativeShare(
+      typeof navigator !== "undefined" &&
+        typeof navigator.share === "function"
+    );
+  }, []);
+
+  const summary =
+    `${BRAND.utility} vs ${BRAND.provider} — estimated 25-year savings: ${fmt(totalSavings)}.\n\n` +
+    `Inputs:\n` +
+    `  • ${BRAND.utility} bill: $${edisonBill}/mo\n` +
+    `  • ${BRAND.provider} PPA: $${ppaPayment}/mo\n` +
+    `  • ${BRAND.utility} rate increase: ${edisonRate.toFixed(1)}%/yr\n` +
+    `  • PPA escalator: ${ppaEsc}%/yr\n` +
+    `  • System: ${withBattery ? "Solar + battery" : "Solar only"}\n\n` +
+    `Estimates only — not a guarantee of savings.`;
+
+  const smsBody = `${summary}\n\n${shareUrl}`;
+  const smsHref = `sms:?&body=${encodeURIComponent(smsBody)}`;
+
+  const copyLink = async () => {
+    if (typeof navigator === "undefined" || !navigator.clipboard) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2200);
+    } catch {
+      // ignore
+    }
+  };
+
+  const nativeShare = async () => {
+    if (typeof navigator === "undefined" || !navigator.share) return;
+    try {
+      await navigator.share({
+        title: `${BRAND.utility} vs ${BRAND.provider} — estimated savings`,
+        text: summary,
+        url: shareUrl,
+      });
+    } catch {
+      // user dismissed — ignore
+    }
+  };
+
+  return (
+    <ModalShell onClose={onClose} maxWidthClass="max-w-md">
+      <div className="eyebrow mb-3">Leave-behind</div>
+      <h2 className="text-2xl font-semibold text-slate-50 mb-2 tracking-tight">
+        Take your numbers with you
+      </h2>
+      <p className="text-slate-400 text-[14px] mb-5">
+        A direct link back to this exact scenario. No account, no signup.
+      </p>
+
+      <div className="share-summary mb-5">
+        <pre className="whitespace-pre-wrap text-[13px] text-slate-300 font-sans leading-relaxed m-0">
+          {summary}
+        </pre>
+      </div>
+
+      <div className="space-y-2.5">
+        {hasNativeShare ? (
+          <button
+            onClick={nativeShare}
+            className="share-btn share-btn-primary"
+          >
+            <ShareIcon />
+            Share
+          </button>
+        ) : null}
+        <a href={smsHref} className="share-btn">
+          <SmsIcon />
+          Text me my numbers
+        </a>
+        <button
+          onClick={copyLink}
+          className="share-btn"
+          disabled={!shareUrl}
+          aria-live="polite"
+        >
+          {copied ? <CheckIcon /> : <CopyIcon />}
+          {copied ? "Link copied" : "Copy link"}
+        </button>
+      </div>
+
+      <div className="mt-5 text-[12px] text-slate-500 leading-relaxed">
+        Estimates only — your signed agreement governs actual payments.
+      </div>
+    </ModalShell>
+  );
+}
+
+function ShareIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path
+        d="M3 7v4.5a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5V7"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M7 1v8M4 3.5L7 1l3 2.5"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SmsIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path
+        d="M2 3a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H6.5L4 12.5V10H3a1 1 0 0 1-1-1V3z"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function CopyIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <rect
+        x="3.5"
+        y="3.5"
+        width="7"
+        height="8"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.3"
+      />
+      <path
+        d="M5.5 3V2a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v6"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path
+        d="M2.5 7.5L5.5 10.5L11.5 3.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
