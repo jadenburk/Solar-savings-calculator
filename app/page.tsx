@@ -30,7 +30,7 @@ ChartJS.defaults.color = "#94A3B8";
 const fmt = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
 const YEARS = Array.from({ length: 25 }, (_, i) => i + 1);
 const CARD_YEARS = [1, 5, 10, 20, 25] as const;
-const PPA_ESCALATOR = 3.5;
+const PPA_OPTIONS = [0, 3.5] as const;
 
 /* ----------------------------- Q&A content ----------------------------- */
 
@@ -48,7 +48,7 @@ const CATEGORIES: Category[] = [
       },
       {
         q: "How does this actually save me money?",
-        a: "Your Sunrun rate is locked in and rises by a fixed 3.5% per year. Edison's rates have historically risen around 6% per year. The gap compounds over time. The number at the top of this page is that compounded difference over 25 years.",
+        a: "Your Sunrun rate is locked in and rises by either 0% or 3.5% per year (the only two contract options). Edison's rates have historically risen around 6% per year. The gap compounds over time. The number at the top of this page is that compounded difference over 25 years.",
       },
       {
         q: "Does the system include batteries?",
@@ -73,12 +73,12 @@ const CATEGORIES: Category[] = [
         a: "Purchasing requires $25k–$40k in cash upfront and several years of payback before you break even. The federal solar tax credit was eliminated at the end of 2025, so buying no longer comes with the 30% rebate it used to. The PPA exists for homeowners who'd rather skip the upfront cost and start saving on day one.",
       },
       {
-        q: "What if Edison's rates don't keep going up?",
-        a: "Move the rate-increase slider above to test it. Even at 3–4% annual increases, most homes still come out ahead. Edison rates have climbed steadily for over a decade, but you can model any assumption you want here.",
+        q: "What if Edison's rates just stop going up?",
+        a: "It's the fair question to ask, but California has several structural reasons rates keep climbing. Edison is paying out billions in wildfire-related settlements and is required by state law to underground lines, expand vegetation management, and harden the grid through the late 2020s — and the CPUC lets those costs flow into rates. On top of that, AI and data center demand is the fastest-growing load in the state, EVs and heat pumps are shifting more energy onto the grid, and California's 2045 clean-energy mandate requires a massive transmission and storage buildout. Edison residential rates have roughly doubled since 2014, and the CPUC has already approved further increases through 2027. Even if you assume only 3–4% per year going forward (well below the actual trend), the math still favors solar.",
       },
       {
         q: "Will my Sunrun payment go up?",
-        a: "Yes — by 3.5% per year. That's the contractual escalator for every new PPA. It's locked in writing for 25 years and is well below Edison's annual increases.",
+        a: "Yes — by either 0% or 3.5% per year, depending on which contract you sign. Both are locked in writing for 25 years and are well below Edison's typical annual increases.",
       },
       {
         q: "What's the catch?",
@@ -135,8 +135,8 @@ const CATEGORIES: Category[] = [
         a: "Only to model real numbers using your actual usage. Nothing is sent anywhere — this tool runs entirely on this device and stores no customer information.",
       },
       {
-        q: "Why is the escalator 3.5%?",
-        a: "That's the contractual escalator for every new Sunrun PPA — it isn't a number that varies by home or that gets negotiated. The calculator above uses it automatically.",
+        q: "Why does the calculator only show 0% and 3.5%?",
+        a: "Those are the only two escalators Sunrun writes into new PPAs — there's no other value to choose. 3.5% is the standard option; 0% (flat for 25 years) is offered to qualifying homes. Toggle between them above to see how each plays out.",
       },
     ],
   },
@@ -164,11 +164,17 @@ function useBumpOnChange<T>(value: T, className: string) {
 /* --------------------------------- Page --------------------------------- */
 
 export default function Page() {
-  const [edisonBill, setEdisonBill] = useState(250);
-  const [ppaPayment, setPpaPayment] = useState(180);
+  const [edisonBill, setEdisonBill] = useState<number | null>(250);
+  const [ppaPayment, setPpaPayment] = useState<number | null>(180);
   const [edisonRate, setEdisonRate] = useState(6);
+  const [ppaEsc, setPpaEsc] = useState<number>(3.5);
   const [modalOpen, setModalOpen] = useState(false);
   const [qaOpen, setQaOpen] = useState(false);
+  const [ratesOpen, setRatesOpen] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
+
+  const edBillNum = edisonBill ?? 0;
+  const ppaPayNum = ppaPayment ?? 0;
 
   const { edisonCumArr, ppaCumArr } = useMemo(() => {
     const ed: number[] = [];
@@ -177,13 +183,28 @@ export default function Page() {
     let srCum = 0;
     for (let i = 0; i < 25; i++) {
       const y = i + 1;
-      edCum += edisonBill * 12 * Math.pow(1 + edisonRate / 100, y - 1);
-      srCum += ppaPayment * 12 * Math.pow(1 + PPA_ESCALATOR / 100, y - 1);
+      edCum += edBillNum * 12 * Math.pow(1 + edisonRate / 100, y - 1);
+      srCum += ppaPayNum * 12 * Math.pow(1 + ppaEsc / 100, y - 1);
       ed.push(edCum);
       sr.push(srCum);
     }
     return { edisonCumArr: ed, ppaCumArr: sr };
-  }, [edisonBill, ppaPayment, edisonRate]);
+  }, [edBillNum, ppaPayNum, edisonRate, ppaEsc]);
+
+  const { ppa35Cum, ppa0Cum } = useMemo(() => {
+    const a: number[] = [];
+    const b: number[] = [];
+    let ac = 0;
+    let bc = 0;
+    for (let i = 0; i < 25; i++) {
+      const y = i + 1;
+      ac += ppaPayNum * 12 * Math.pow(1.035, y - 1);
+      bc += ppaPayNum * 12;
+      a.push(ac);
+      b.push(bc);
+    }
+    return { ppa35Cum: a, ppa0Cum: b };
+  }, [ppaPayNum]);
 
   const savingsAt = (y: number) => edisonCumArr[y - 1] - ppaCumArr[y - 1];
   const total = savingsAt(25);
@@ -193,16 +214,18 @@ export default function Page() {
   const headlineRef = useBumpOnChange(total, "pulse");
 
   useEffect(() => {
-    if (!modalOpen && !qaOpen) return;
+    if (!modalOpen && !qaOpen && !ratesOpen && !compareOpen) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setModalOpen(false);
         setQaOpen(false);
+        setRatesOpen(false);
+        setCompareOpen(false);
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [modalOpen, qaOpen]);
+  }, [modalOpen, qaOpen, ratesOpen, compareOpen]);
 
   const chartData = useMemo(
     () => ({
@@ -338,14 +361,26 @@ export default function Page() {
   return (
     <main className="max-w-[1380px] mx-auto px-5 md:px-10 py-7 md:py-10 min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between mb-12 md:mb-16">
+      <div className="flex items-center justify-between mb-12 md:mb-16 gap-3">
         <div className="text-[13px] font-semibold tracking-[0.18em] uppercase text-slate-300">
           Solar <span className="text-slate-600 mx-1.5">/</span> Edison
         </div>
-        <button onClick={() => setQaOpen(true)} className="btn-ghost">
-          <QuestionIcon />
-          <span>Common Questions</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCompareOpen(true)}
+            className="btn-ghost"
+            title="Side-by-side: Edison vs 3.5% PPA vs 0% PPA"
+          >
+            <CompareIcon />
+            <span className="hidden sm:inline">3-Way Comparison</span>
+            <span className="sm:hidden">Compare</span>
+          </button>
+          <button onClick={() => setQaOpen(true)} className="btn-ghost">
+            <QuestionIcon />
+            <span className="hidden sm:inline">Common Questions</span>
+            <span className="sm:hidden">Questions</span>
+          </button>
+        </div>
       </div>
 
       {/* Headline */}
@@ -383,10 +418,13 @@ export default function Page() {
                 inputMode="decimal"
                 min={0}
                 step={1}
-                value={edisonBill}
-                onChange={(e) =>
-                  setEdisonBill(Math.max(0, Number(e.target.value) || 0))
-                }
+                value={edisonBill ?? ""}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "") return setEdisonBill(null);
+                  const n = Number(v);
+                  if (!isNaN(n) && n >= 0) setEdisonBill(n);
+                }}
                 onFocus={(e) => e.currentTarget.select()}
                 className="money-input"
               />
@@ -405,10 +443,13 @@ export default function Page() {
                 inputMode="decimal"
                 min={0}
                 step={1}
-                value={ppaPayment}
-                onChange={(e) =>
-                  setPpaPayment(Math.max(0, Number(e.target.value) || 0))
-                }
+                value={ppaPayment ?? ""}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "") return setPpaPayment(null);
+                  const n = Number(v);
+                  if (!isNaN(n) && n >= 0) setPpaPayment(n);
+                }}
                 onFocus={(e) => e.currentTarget.select()}
                 className="money-input"
               />
@@ -439,22 +480,40 @@ export default function Page() {
               <span className="text-slate-500">per year</span>
               <span>10%</span>
             </div>
+            <button
+              onClick={() => setRatesOpen(true)}
+              className="mt-3 text-[12px] text-slate-400 hover:text-slate-100 transition inline-flex items-center gap-1.5 font-medium"
+            >
+              Why are rates climbing?
+              <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                <path
+                  d="M1 5.5h9M6 1l4.5 4.5L6 10"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
           </div>
 
           <div>
             <div className="input-label mb-2.5">PPA annual escalator</div>
-            <div className="locked-display">
-              <span className="locked-value">
-                {PPA_ESCALATOR.toFixed(1)}
-                <span className="locked-value-unit">%</span>
-              </span>
-              <span className="locked-badge">
-                <LockIcon />
-                Locked
-              </span>
+            <div className="seg">
+              {PPA_OPTIONS.map((opt) => (
+                <button
+                  key={opt}
+                  onClick={() => setPpaEsc(opt)}
+                  className={`seg-btn ${ppaEsc === opt ? "active" : ""}`}
+                  aria-pressed={ppaEsc === opt}
+                >
+                  {opt}
+                  <span className="seg-unit">%</span>
+                </button>
+              ))}
             </div>
             <div className="text-[11px] text-slate-500 mt-2 font-medium">
-              Contractual rate. Same for every new home.
+              The only two contractual rates Sunrun offers.
             </div>
           </div>
         </div>
@@ -498,12 +557,26 @@ export default function Page() {
       </section>
 
       {/* Footer */}
-      <footer className="flex items-center justify-center gap-6 pb-8 text-[13px] text-slate-500">
+      <footer className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pb-8 text-[13px] text-slate-500">
         <button
           onClick={() => setModalOpen(true)}
           className="hover:text-slate-200 transition"
         >
           Assumptions
+        </button>
+        <span className="text-slate-700">·</span>
+        <button
+          onClick={() => setRatesOpen(true)}
+          className="hover:text-slate-200 transition"
+        >
+          Why rates climb
+        </button>
+        <span className="text-slate-700">·</span>
+        <button
+          onClick={() => setCompareOpen(true)}
+          className="hover:text-slate-200 transition"
+        >
+          3-way comparison
         </button>
         <span className="text-slate-700">·</span>
         <button
@@ -542,9 +615,9 @@ export default function Page() {
                 Sunrun PPA cost in year N
               </div>
               <p className="text-slate-400">
-                Your PPA payment &times; 12, compounded by the contractual
-                3.5% annual escalator. Every new Sunrun PPA uses the same
-                escalator — it isn&apos;t a number that varies by home.
+                Your PPA payment &times; 12, compounded by whichever
+                escalator you select above (0% or 3.5% — the only two
+                contractual options on a new Sunrun PPA).
               </p>
             </div>
             <div>
@@ -577,6 +650,20 @@ export default function Page() {
 
       {/* Q&A Modal */}
       {qaOpen && <QAModal onClose={() => setQaOpen(false)} />}
+
+      {/* Why Rates Climb Modal */}
+      {ratesOpen && <RatesModal onClose={() => setRatesOpen(false)} />}
+
+      {/* 3-Way Comparison Modal */}
+      {compareOpen && (
+        <CompareModal
+          onClose={() => setCompareOpen(false)}
+          years={YEARS}
+          edisonCumArr={edisonCumArr}
+          ppa35Cum={ppa35Cum}
+          ppa0Cum={ppa0Cum}
+        />
+      )}
     </main>
   );
 }
@@ -762,22 +849,335 @@ function QAModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function LockIcon() {
+function RatesModal({ onClose }: { onClose: () => void }) {
+  const reasons = [
+    {
+      h: "Wildfire liability and grid hardening",
+      b: "Southern California Edison has paid billions in settlements for past fires and is now required by California (AB 1054 and CPUC orders) to underground distribution lines, expand vegetation management, and replace aging substations through the late 2020s. Those infrastructure costs are recovered through rates.",
+    },
+    {
+      h: "Data centers and AI",
+      b: "California has one of the fastest-growing data center loads in the country. Bringing new generation and transmission online to serve AI infrastructure is a multi-decade investment that's spread across every ratepayer.",
+    },
+    {
+      h: "Electrification of everything",
+      b: "EVs, induction cooking, and heat pumps are shifting energy use from gas onto the electric grid. Per-home electricity demand is rising even as overall household energy use becomes more efficient.",
+    },
+    {
+      h: "100% clean energy by 2045",
+      b: "California's clean-energy mandate requires a massive buildout of transmission lines, utility-scale solar, and battery storage. The state recovers that cost from customers over time through rate cases.",
+    },
+    {
+      h: "What the numbers have actually done",
+      b: "Edison residential rates have roughly doubled since 2014 — averaging well over 6% per year. The CPUC has already approved additional increases through 2027 to fund ongoing fire mitigation and grid investments.",
+    },
+  ];
+
   return (
-    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-      <rect
-        x="1.5"
-        y="4.5"
-        width="7"
-        height="5"
-        rx="1"
+    <ModalShell onClose={onClose} maxWidthClass="max-w-2xl">
+      <div className="eyebrow mb-3">Rate context</div>
+      <h2 className="text-2xl md:text-[28px] font-semibold text-slate-50 mb-2 tracking-tight">
+        Why Edison rates keep climbing
+      </h2>
+      <p className="text-slate-400 text-[14.5px] leading-relaxed mb-6">
+        California has structural reasons electricity costs keep rising — not
+        flatten. Even if you assume a much more conservative increase, the
+        math still favors solar.
+      </p>
+
+      <div className="space-y-5">
+        {reasons.map((r, i) => (
+          <div key={i} className="flex gap-4">
+            <div className="reason-num">{i + 1}</div>
+            <div className="flex-1">
+              <div className="font-semibold text-slate-100 text-[15px] mb-1.5">
+                {r.h}
+              </div>
+              <div className="text-slate-400 text-[14px] leading-relaxed">
+                {r.b}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-7 pt-5 border-t border-white/10 text-slate-400 text-[13.5px] leading-relaxed">
+        Want to be conservative? Slide the Edison rate down to 3 or 4%. The
+        comparison still favors solar in nearly every case — because the PPA
+        rate is below today&apos;s bill and grows slower regardless.
+      </div>
+    </ModalShell>
+  );
+}
+
+function CompareModal({
+  onClose,
+  years,
+  edisonCumArr,
+  ppa35Cum,
+  ppa0Cum,
+}: {
+  onClose: () => void;
+  years: number[];
+  edisonCumArr: number[];
+  ppa35Cum: number[];
+  ppa0Cum: number[];
+}) {
+  const edisonTotal = edisonCumArr[24] ?? 0;
+  const ppa35Total = ppa35Cum[24] ?? 0;
+  const ppa0Total = ppa0Cum[24] ?? 0;
+  const save35 = edisonTotal - ppa35Total;
+  const save0 = edisonTotal - ppa0Total;
+
+  const data = useMemo(
+    () => ({
+      labels: years,
+      datasets: [
+        {
+          label: "Edison",
+          data: edisonCumArr,
+          borderColor: "#F87171",
+          backgroundColor: "rgba(248, 113, 113, 0)",
+          borderWidth: 2.5,
+          tension: 0.28,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: "#F87171",
+          pointHoverBorderColor: "#0E1320",
+          pointHoverBorderWidth: 3,
+          fill: false as const,
+          order: 1,
+        },
+        {
+          label: "Sunrun · 3.5% escalator",
+          data: ppa35Cum,
+          borderColor: "#10B981",
+          backgroundColor: "rgba(16, 185, 129, 0)",
+          borderWidth: 2.5,
+          tension: 0.28,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: "#10B981",
+          pointHoverBorderColor: "#0E1320",
+          pointHoverBorderWidth: 3,
+          fill: false as const,
+          order: 2,
+        },
+        {
+          label: "Sunrun · 0% escalator",
+          data: ppa0Cum,
+          borderColor: "#5EEAD4",
+          backgroundColor: "rgba(94, 234, 212, 0)",
+          borderWidth: 2.5,
+          borderDash: [6, 4],
+          tension: 0.28,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: "#5EEAD4",
+          pointHoverBorderColor: "#0E1320",
+          pointHoverBorderWidth: 3,
+          fill: false as const,
+          order: 3,
+        },
+      ],
+    }),
+    [years, edisonCumArr, ppa35Cum, ppa0Cum]
+  );
+
+  const options = useMemo(
+    () =>
+      ({
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 350, easing: "easeOutCubic" as const },
+        interaction: { mode: "index" as const, intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: "rgba(7, 9, 15, 0.96)",
+            titleColor: "#F8FAFC",
+            bodyColor: "#E5EAF2",
+            padding: 12,
+            borderColor: "rgba(255,255,255,0.08)",
+            borderWidth: 1,
+            cornerRadius: 10,
+            titleFont: { weight: 600, size: 12 },
+            bodyFont: { size: 12 },
+            displayColors: true,
+            boxPadding: 6,
+            callbacks: {
+              title: (items: any[]) => "Year " + items[0].label,
+              label: (item: any) =>
+                " " + item.dataset.label + ": " + fmt(item.parsed.y),
+            },
+          },
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: "YEAR",
+              color: "#64748B",
+              font: { weight: 600 as const, size: 10 },
+              padding: { top: 8 },
+            },
+            grid: { display: false },
+            border: { color: "rgba(255,255,255,0.06)" },
+            ticks: {
+              autoSkip: true,
+              maxTicksLimit: 8,
+              color: "#64748B",
+              font: { size: 11 },
+            },
+          },
+          y: {
+            grid: { color: "rgba(255,255,255,0.04)" },
+            border: { display: false },
+            ticks: {
+              callback: (v: any) => fmt(Number(v)),
+              color: "#64748B",
+              font: { size: 11 },
+              padding: 6,
+            },
+            beginAtZero: true,
+          },
+        },
+      }) as const,
+    []
+  );
+
+  return (
+    <ModalShell onClose={onClose} maxWidthClass="max-w-3xl">
+      <div className="eyebrow mb-3">Side by side</div>
+      <h2 className="text-2xl md:text-[28px] font-semibold text-slate-50 mb-2 tracking-tight">
+        3-way comparison
+      </h2>
+      <p className="text-slate-400 text-[14.5px] mb-5">
+        How your numbers play out across all three options over 25 years.
+      </p>
+
+      {/* Legend pills */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <span className="cmp-legend">
+          <span className="cmp-dot" style={{ background: "#F87171" }} />
+          Edison
+        </span>
+        <span className="cmp-legend">
+          <span className="cmp-dot" style={{ background: "#10B981" }} />
+          Sunrun · 3.5%
+        </span>
+        <span className="cmp-legend">
+          <span
+            className="cmp-dot"
+            style={{
+              background: "transparent",
+              border: "1.5px dashed #5EEAD4",
+            }}
+          />
+          Sunrun · 0%
+        </span>
+      </div>
+
+      {/* Chart */}
+      <div className="cmp-chart-shell mb-6">
+        <Line data={data} options={options} />
+      </div>
+
+      {/* 25-year totals */}
+      <div className="qa-cat-label !pt-0 !pb-3">25-year totals</div>
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <TotalsCard color="#F87171" label="Edison" amount={edisonTotal} />
+        <TotalsCard
+          color="#10B981"
+          label="Sunrun · 3.5%"
+          amount={ppa35Total}
+        />
+        <TotalsCard color="#5EEAD4" label="Sunrun · 0%" amount={ppa0Total} />
+      </div>
+
+      {/* Savings vs Edison */}
+      <div className="qa-cat-label !pt-0 !pb-3">Savings vs Edison</div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="cmp-save-row">
+          <div>
+            <div className="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-500 mb-1">
+              If 3.5% PPA
+            </div>
+            <div className="cmp-save-amount">{fmt(save35)}</div>
+          </div>
+          <div className="text-[11px] text-slate-500 text-right leading-snug max-w-[120px]">
+            over 25 years
+          </div>
+        </div>
+        <div className="cmp-save-row">
+          <div>
+            <div className="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-500 mb-1">
+              If 0% PPA
+            </div>
+            <div className="cmp-save-amount cmp-save-amount-light">
+              {fmt(save0)}
+            </div>
+          </div>
+          <div className="text-[11px] text-slate-500 text-right leading-snug max-w-[120px]">
+            over 25 years
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-5 text-[12.5px] text-slate-500 leading-relaxed">
+        Assumes the same starting monthly PPA payment in both scenarios. Real
+        agreements with a 0% escalator sometimes start at a slightly higher
+        monthly rate to lock in the flat curve.
+      </div>
+    </ModalShell>
+  );
+}
+
+function TotalsCard({
+  color,
+  label,
+  amount,
+}: {
+  color: string;
+  label: string;
+  amount: number;
+}) {
+  return (
+    <div className="cmp-total-card">
+      <div className="flex items-center gap-2 mb-2">
+        <span
+          className="cmp-dot"
+          style={{ background: color, boxShadow: "none" }}
+        />
+        <div className="text-[10.5px] font-semibold tracking-[0.18em] uppercase text-slate-400">
+          {label}
+        </div>
+      </div>
+      <div className="cmp-total-amount" style={{ color }}>
+        {fmt(amount)}
+      </div>
+    </div>
+  );
+}
+
+function CompareIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path
+        d="M2 11L2 3M2 3L4.5 5.5M2 3L-0.5 5.5"
         stroke="currentColor"
-        strokeWidth="1.2"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        transform="translate(2 0)"
       />
       <path
-        d="M3 4.5V3a2 2 0 014 0v1.5"
+        d="M2 3L2 11M2 11L4.5 8.5M2 11L-0.5 8.5"
         stroke="currentColor"
-        strokeWidth="1.2"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        transform="translate(7 0)"
       />
     </svg>
   );
