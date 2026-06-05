@@ -483,6 +483,38 @@ export default function Page() {
 
       {/* Inputs */}
       <section className="panel p-5 md:p-7 mb-6 md:mb-7">
+        {/* System type toggle (Phase 4) */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5 pb-5 border-b border-white/[0.05]">
+          <div className="min-w-0">
+            <div className="text-[13px] font-semibold text-slate-200">
+              System type
+            </div>
+            <div className="text-[11.5px] text-slate-500 mt-0.5">
+              Battery presence changes self-consumption under NEM 3.0.
+            </div>
+          </div>
+          <div
+            className="seg battery-seg"
+            role="group"
+            aria-label="System type"
+          >
+            <button
+              onClick={() => setWithBattery(true)}
+              className={`seg-btn ${withBattery ? "active" : ""}`}
+              aria-pressed={withBattery}
+            >
+              Solar + battery
+            </button>
+            <button
+              onClick={() => setWithBattery(false)}
+              className={`seg-btn ${!withBattery ? "active" : ""}`}
+              aria-pressed={!withBattery}
+            >
+              Solar only
+            </button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-7">
           <div>
             <div className="input-label mb-2.5">Current {BRAND.utility} bill</div>
@@ -603,6 +635,27 @@ export default function Page() {
               The only two contractual rates {BRAND.provider} offers.
             </div>
           </div>
+        </div>
+
+        {/* NEM 3.0 sensitivity note (Phase 4) */}
+        <div className="mt-5 pt-5 border-t border-white/[0.05] flex flex-wrap items-start gap-3 text-[12.5px] text-slate-500 leading-relaxed">
+          <span className="nem-chip">
+            NEM 3.0 residual:{" "}
+            <strong className="text-slate-200 font-semibold">
+              {withBattery
+                ? SELF_CONSUMPTION.solarBatteryResidualPct
+                : SELF_CONSUMPTION.solarOnlyResidualPct}
+              %
+            </strong>
+          </span>
+          <span className="flex-1 min-w-[220px]">
+            Under net billing, exported solar is credited well below retail —
+            so self-consumption (and batteries) materially affect realized
+            savings. The calculator adds a residual {BRAND.utility} bill of
+            this percentage on top of the PPA payment.{" "}
+            {BRAND.provider} sizes systems up to{" "}
+            {SELF_CONSUMPTION.maxOffsetPct}% of usage.
+          </span>
         </div>
       </section>
 
