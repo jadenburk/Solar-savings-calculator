@@ -14,13 +14,10 @@ import {
 import { Line } from "react-chartjs-2";
 import {
   BRAND,
-  DISCLAIMER,
   DISCLAIMER_FULL,
   COMPLIANCE_NOTE,
   SOURCES,
   SCE_RATE_ANCHORS,
-  BILL_COMPOSITION,
-  SELF_CONSUMPTION,
 } from "./brand";
 
 ChartJS.register(
@@ -209,7 +206,6 @@ export default function Page() {
   const [ppaPayment, setPpaPayment] = useState<number | null>(180);
   const [edisonRate, setEdisonRate] = useState(6);
   const [ppaEsc, setPpaEsc] = useState<number>(3.5);
-  const [withBattery, setWithBattery] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [qaOpen, setQaOpen] = useState(false);
   const [ratesOpen, setRatesOpen] = useState(false);
@@ -249,9 +245,6 @@ export default function Page() {
       const n = Number(e);
       if (n === 0 || n === 3.5) setPpaEsc(n);
     }
-    const bat = p.get("bat");
-    if (bat === "1") setWithBattery(true);
-    if (bat === "0") setWithBattery(false);
     // Defer marking "mounted" until after the current task so the encoder's
     // mount-time fire (with default state) does not clobber the URL params
     // we just decoded.
@@ -269,17 +262,12 @@ export default function Page() {
     if (ppaPayment !== null) p.set("p", String(ppaPayment));
     p.set("r", edisonRate.toString());
     p.set("e", ppaEsc.toString());
-    p.set("bat", withBattery ? "1" : "0");
     const url = window.location.pathname + "?" + p.toString();
     window.history.replaceState(null, "", url);
-  }, [edisonBill, ppaPayment, edisonRate, ppaEsc, withBattery]);
+  }, [edisonBill, ppaPayment, edisonRate, ppaEsc]);
 
   const edBillNum = edisonBill ?? 0;
   const ppaPayNum = ppaPayment ?? 0;
-
-  const residualPct = withBattery
-    ? SELF_CONSUMPTION.solarBatteryResidualPct / 100
-    : SELF_CONSUMPTION.solarOnlyResidualPct / 100;
 
   const { edisonCumArr, ppaCumArr } = useMemo(() => {
     const ed: number[] = [];
@@ -290,17 +278,13 @@ export default function Page() {
       const y = i + 1;
       const edYear = edBillNum * 12 * Math.pow(1 + edisonRate / 100, y - 1);
       const ppaYear = ppaPayNum * 12 * Math.pow(1 + ppaEsc / 100, y - 1);
-      // NEM 3.0 residual: under net billing exports are credited below
-      // retail, so the customer still pays the utility some share of their
-      // pre-solar bill. The residual grows with the utility rate.
-      const residualYear = residualPct * edYear;
       edCum += edYear;
-      srCum += ppaYear + residualYear;
+      srCum += ppaYear;
       ed.push(edCum);
       sr.push(srCum);
     }
     return { edisonCumArr: ed, ppaCumArr: sr };
-  }, [edBillNum, ppaPayNum, edisonRate, ppaEsc, residualPct]);
+  }, [edBillNum, ppaPayNum, edisonRate, ppaEsc]);
 
   const { ppa35Cum, ppa0Cum } = useMemo(() => {
     const a: number[] = [];
@@ -309,15 +293,13 @@ export default function Page() {
     let bc = 0;
     for (let i = 0; i < 25; i++) {
       const y = i + 1;
-      const edYear = edBillNum * 12 * Math.pow(1 + edisonRate / 100, y - 1);
-      const residualYear = residualPct * edYear;
-      ac += ppaPayNum * 12 * Math.pow(1.035, y - 1) + residualYear;
-      bc += ppaPayNum * 12 + residualYear;
+      ac += ppaPayNum * 12 * Math.pow(1.035, y - 1);
+      bc += ppaPayNum * 12;
       a.push(ac);
       b.push(bc);
     }
     return { ppa35Cum: a, ppa0Cum: b };
-  }, [ppaPayNum, edBillNum, edisonRate, residualPct]);
+  }, [ppaPayNum]);
 
   const savingsAt = (y: number) => edisonCumArr[y - 1] - ppaCumArr[y - 1];
   const total = savingsAt(25);
@@ -484,48 +466,18 @@ export default function Page() {
   return (
     <main className="max-w-[1380px] mx-auto px-5 md:px-10 py-7 md:py-10 min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 md:mb-10 gap-3">
+      <div className="flex items-center justify-between mb-10 md:mb-14 gap-3">
         <div className="text-[13px] font-semibold tracking-[0.18em] uppercase text-slate-300">
           Solar <span className="text-slate-600 mx-1.5">/</span> {BRAND.utility}
         </div>
-        <div className="flex items-center gap-2 flex-wrap justify-end">
-          <button
-            onClick={() => setLookbackOpen(true)}
-            className="btn-ghost"
-            title="What this usage would have cost in past years"
-          >
-            <HistoryIcon />
-            <span className="hidden md:inline">Look-Back</span>
-          </button>
-          <button
-            onClick={() => setCompareOpen(true)}
-            className="btn-ghost"
-            title={`Side-by-side: ${BRAND.utility} vs 3.5% PPA vs 0% PPA`}
-          >
-            <CompareIcon />
-            <span>3-Way</span>
-          </button>
-          <button onClick={() => setQaOpen(true)} className="btn-ghost">
-            <QuestionIcon />
-            <span className="hidden md:inline">Questions</span>
-          </button>
-          <button
-            onClick={() => setShareOpen(true)}
-            className="btn-ghost btn-ghost-primary"
-            title="Share or text these results"
-          >
-            <ShareIcon />
-            <span>Share</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Compliance pill */}
-      <div className="flex justify-center mb-8 md:mb-10">
-        <div className="compliance-pill">
-          <span className="compliance-dot" />
-          {COMPLIANCE_NOTE}
-        </div>
+        <button
+          onClick={() => setShareOpen(true)}
+          className="btn-ghost btn-ghost-primary"
+          title="Share or text these results"
+        >
+          <ShareIcon />
+          <span>Share</span>
+        </button>
       </div>
 
       {/* Headline */}
@@ -553,32 +505,6 @@ export default function Page() {
 
       {/* Inputs */}
       <section className="panel p-5 md:p-7 mb-6 md:mb-7">
-        {/* System type toggle */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-5 pb-5 border-b border-white/[0.05]">
-          <div className="text-[13px] font-semibold text-slate-200">
-            System type
-          </div>
-          <div
-            className="seg battery-seg"
-            role="group"
-            aria-label="System type"
-          >
-            <button
-              onClick={() => setWithBattery(true)}
-              className={`seg-btn ${withBattery ? "active" : ""}`}
-              aria-pressed={withBattery}
-            >
-              Solar + battery
-            </button>
-            <button
-              onClick={() => setWithBattery(false)}
-              className={`seg-btn ${!withBattery ? "active" : ""}`}
-              aria-pressed={!withBattery}
-            >
-              Solar only
-            </button>
-          </div>
-        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-7">
           <div>
@@ -639,31 +565,20 @@ export default function Page() {
                 <span className="text-slate-500 font-medium">%</span>
               </div>
             </div>
-            <div className="rate-slider-wrap">
-              <div className="rate-supported-band" aria-hidden="true" />
-              <input
-                type="range"
-                min={3}
-                max={10}
-                step={0.1}
-                value={edisonRate}
-                onChange={(e) => setEdisonRate(Number(e.target.value))}
-                aria-label={`${BRAND.utility} rate increase, percent per year`}
-              />
-            </div>
+            <input
+              type="range"
+              min={3}
+              max={10}
+              step={0.1}
+              value={edisonRate}
+              onChange={(e) => setEdisonRate(Number(e.target.value))}
+              aria-label={`${BRAND.utility} rate increase, percent per year`}
+            />
             <div className="flex justify-between text-[11px] text-slate-600 mt-2.5 font-medium">
               <span>3%</span>
-              <span className="text-emerald-400/80">5–7.5% supported</span>
+              <span className="text-slate-500">per year</span>
               <span>10%</span>
             </div>
-            {edisonRate >= 8 ? (
-              <div className="rate-warn mt-3" role="status">
-                <WarnIcon />
-                <span>
-                  Above CPUC-authorized base — for illustration only.
-                </span>
-              </div>
-            ) : null}
             <button
               onClick={() => setRatesOpen(true)}
               className="mt-3 text-[12px] text-slate-400 hover:text-slate-100 transition inline-flex items-center gap-1.5 font-medium"
@@ -726,52 +641,6 @@ export default function Page() {
         </div>
       </section>
 
-      {/* Bill composition */}
-      <section className="panel p-5 md:p-7 mb-6 md:mb-7">
-        <div className="text-[14px] font-semibold text-slate-200 tracking-tight mb-4">
-          Where your {BRAND.utility} bill goes
-        </div>
-
-        <div
-          className="bill-split-bar"
-          role="img"
-          aria-label={`Bill composition: ${BILL_COMPOSITION.generationPct} percent generation, ${BILL_COMPOSITION.deliveryPct} percent delivery`}
-        >
-          <div
-            className="bill-split-generation"
-            style={{ width: `${BILL_COMPOSITION.generationPct}%` }}
-          >
-            <span className="bill-split-num">
-              {BILL_COMPOSITION.generationPct}%
-            </span>
-            <span className="bill-split-lbl">Generation</span>
-          </div>
-          <div
-            className="bill-split-delivery"
-            style={{ width: `${BILL_COMPOSITION.deliveryPct}%` }}
-          >
-            <span className="bill-split-num">
-              {BILL_COMPOSITION.deliveryPct}%
-            </span>
-            <span className="bill-split-lbl">Delivery</span>
-          </div>
-        </div>
-
-        <div className="mt-4 text-[13px] text-slate-500 leading-relaxed">
-          Delivery — wildfire hardening, transmission, undergrounding — is
-          the part that&apos;s structurally climbing. Source:{" "}
-          <a
-            href={SOURCES.cpucPao.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="source-link"
-          >
-            {SOURCES.cpucPao.short}
-          </a>
-          .
-        </div>
-      </section>
-
       {/* Savings Cards */}
       <section className="mb-12">
         <div className="flex items-center gap-3 mb-4">
@@ -787,67 +656,53 @@ export default function Page() {
         </div>
       </section>
 
-      {/* Footer links */}
-      <footer className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pb-6 text-[13px] text-slate-500">
-        <button
-          onClick={() => setModalOpen(true)}
-          className="hover:text-slate-200 transition"
-        >
-          Assumptions &amp; sources
-        </button>
-        <span className="text-slate-700">·</span>
+      {/* Footer — tools on the left, disclaimers link last */}
+      <footer className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 pb-8 pt-2 text-[12px] text-slate-500">
         <button
           onClick={() => setLookbackOpen(true)}
           className="hover:text-slate-200 transition"
         >
-          Historical look-back
+          Look-back
         </button>
-        <span className="text-slate-700">·</span>
-        <button
-          onClick={() => setRatesOpen(true)}
-          className="hover:text-slate-200 transition"
-        >
-          Why rates climb
-        </button>
-        <span className="text-slate-700">·</span>
         <button
           onClick={() => setCompareOpen(true)}
           className="hover:text-slate-200 transition"
         >
           3-way comparison
         </button>
-        <span className="text-slate-700">·</span>
+        <button
+          onClick={() => setRatesOpen(true)}
+          className="hover:text-slate-200 transition"
+        >
+          Why rates climb
+        </button>
         <button
           onClick={() => setQaOpen(true)}
           className="hover:text-slate-200 transition"
         >
           Common questions
         </button>
-      </footer>
-
-      {/* Persistent disclaimer band */}
-      <div className="disclaimer-band">
         <button
           onClick={() => setModalOpen(true)}
-          className="text-left hover:text-slate-200 transition"
-          aria-label="Open assumptions and sources"
+          className="hover:text-slate-200 transition"
         >
-          {DISCLAIMER}
+          Disclaimers
         </button>
-      </div>
+      </footer>
 
       {/* Assumptions Modal */}
       {modalOpen && (
         <ModalShell onClose={() => setModalOpen(false)} maxWidthClass="max-w-xl">
-          <div className="eyebrow mb-3">Methodology</div>
-          <h2 className="text-2xl md:text-[28px] font-semibold text-slate-50 mb-5 tracking-tight">
-            Assumptions &amp; methodology
+          <div className="eyebrow mb-3">Disclaimers &amp; methodology</div>
+          <h2 className="text-2xl md:text-[28px] font-semibold text-slate-50 mb-2 tracking-tight">
+            Assumptions, sources &amp; disclaimers
           </h2>
+          <p className="text-amber-300/90 text-[13px] mb-5">
+            {COMPLIANCE_NOTE}
+          </p>
           <div className="space-y-5 text-slate-300 leading-relaxed text-[15px]">
             <p>
-              We model each year of cost independently, then add them up to
-              get a running total. Every number on this page is an estimate
-              based on the inputs you entered and the sources below.
+              {DISCLAIMER_FULL}
             </p>
             <div>
               <div className="font-semibold text-slate-100 mb-1.5">
@@ -867,11 +722,8 @@ export default function Page() {
               <p className="text-slate-400">
                 Your PPA payment &times; 12, compounded by whichever
                 escalator you select (0% or 3.5% — the only two contractual
-                options on a new {BRAND.provider} PPA), plus a residual
-                {" "}{BRAND.utility} bill modeling imperfect self-consumption
-                under NEM 3.0. With a battery we use a {SELF_CONSUMPTION.solarBatteryResidualPct}% residual; solar-only uses
-                {" "}{SELF_CONSUMPTION.solarOnlyResidualPct}% (rough industry
-                averages for self-consumption ratios).
+                options on a new {BRAND.provider} PPA). No additional bill
+                components are layered in — what you enter is what you pay.
               </p>
             </div>
             <div>
@@ -880,8 +732,8 @@ export default function Page() {
               </div>
               <p className="text-slate-400">
                 The difference between the {BRAND.utility} running total and
-                the {BRAND.provider} running total (including the residual)
-                at each year. The green area on the chart is the gap.
+                the {BRAND.provider} running total at each year. The shaded
+                area on the chart is the gap.
               </p>
             </div>
             <div>
@@ -979,7 +831,6 @@ export default function Page() {
           ppaPayment={ppaPayNum}
           edisonRate={edisonRate}
           ppaEsc={ppaEsc}
-          withBattery={withBattery}
           totalSavings={total}
         />
       )}
@@ -1508,29 +1359,6 @@ function TotalsCard({
   );
 }
 
-function CompareIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path
-        d="M2 11L2 3M2 3L4.5 5.5M2 3L-0.5 5.5"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        transform="translate(2 0)"
-      />
-      <path
-        d="M2 3L2 11M2 11L4.5 8.5M2 11L-0.5 8.5"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        transform="translate(7 0)"
-      />
-    </svg>
-  );
-}
-
 function LookbackModal({ onClose }: { onClose: () => void }) {
   const [usage, setUsage] = useState<number | null>(750);
   const [unit, setUnit] = useState<"month" | "year">("month");
@@ -1711,40 +1539,12 @@ function LookbackModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function HistoryIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path
-        d="M1 7a6 6 0 1 1 1.76 4.24"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-      <path
-        d="M1 10.5V11a.5.5 0 0 0 .5.5h1.5"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M7 4v3l2 1.5"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function ShareModal({
   onClose,
   edisonBill,
   ppaPayment,
   edisonRate,
   ppaEsc,
-  withBattery,
   totalSavings,
 }: {
   onClose: () => void;
@@ -1752,7 +1552,6 @@ function ShareModal({
   ppaPayment: number;
   edisonRate: number;
   ppaEsc: number;
-  withBattery: boolean;
   totalSavings: number;
 }) {
   const [copied, setCopied] = useState(false);
@@ -1774,8 +1573,7 @@ function ShareModal({
     `  • ${BRAND.utility} bill: $${edisonBill}/mo\n` +
     `  • ${BRAND.provider} PPA: $${ppaPayment}/mo\n` +
     `  • ${BRAND.utility} rate increase: ${edisonRate.toFixed(1)}%/yr\n` +
-    `  • PPA escalator: ${ppaEsc}%/yr\n` +
-    `  • System: ${withBattery ? "Solar + battery" : "Solar only"}\n\n` +
+    `  • PPA escalator: ${ppaEsc}%/yr\n\n` +
     `Estimates only — not a guarantee of savings.`;
 
   const smsBody = `${summary}\n\n${shareUrl}`;
@@ -1918,48 +1716,6 @@ function CheckIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-    </svg>
-  );
-}
-
-function WarnIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-      <path
-        d="M6 1.5L11 10.5H1L6 1.5Z"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M6 5V7.5"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-      <circle cx="6" cy="9" r="0.6" fill="currentColor" />
-    </svg>
-  );
-}
-
-function QuestionIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <circle
-        cx="7"
-        cy="7"
-        r="6"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        opacity="0.7"
-      />
-      <path
-        d="M5.25 5.2c0-.97.78-1.7 1.75-1.7s1.75.73 1.75 1.7c0 .54-.27 1-.71 1.27-.45.28-1.04.61-1.04 1.23v.45"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-      <circle cx="7" cy="10.2" r="0.7" fill="currentColor" />
     </svg>
   );
 }
