@@ -1365,7 +1365,6 @@ function LookbackModal({ onClose }: { onClose: () => void }) {
   const [yearsBack, setYearsBack] = useState(10);
 
   const usageNum = usage ?? 0;
-  const annualKwh = unit === "month" ? usageNum * 12 : usageNum;
 
   const now = new Date();
   const nowYear = now.getFullYear();
@@ -1376,11 +1375,16 @@ function LookbackModal({ onClose }: { onClose: () => void }) {
   const nowRate = lastAnchor.rate;
   const thenRate = interpolateRate(thenYear, nowMonth);
 
-  const thenCost = annualKwh * thenRate;
-  const nowCost = annualKwh * nowRate;
+  // Cost stays in whichever unit the user picked. kWh × $/kWh = $ for the
+  // matching period (monthly kWh → monthly $, annual kWh → annual $).
+  const thenCost = usageNum * thenRate;
+  const nowCost = usageNum * nowRate;
   const delta = nowCost - thenCost;
   const pctChange =
     thenRate > 0 ? ((nowRate - thenRate) / thenRate) * 100 : 0;
+
+  const unitNoun = unit === "month" ? "Monthly" : "Annual";
+  const unitSuffix = unit === "month" ? "/mo" : "/yr";
 
   return (
     <ModalShell onClose={onClose} maxWidthClass="max-w-xl">
@@ -1469,18 +1473,24 @@ function LookbackModal({ onClose }: { onClose: () => void }) {
         <div className="grid grid-cols-2 gap-4 mb-5">
           <div>
             <div className="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-500 mb-1.5">
-              Cost {yearsBack} yr ago
+              {unitNoun} cost {yearsBack} yr ago
             </div>
-            <div className="lookback-amount-then">{fmt(thenCost)}</div>
+            <div className="lookback-amount-then">
+              {fmt(thenCost)}
+              <span className="lookback-unit-suffix">{unitSuffix}</span>
+            </div>
             <div className="text-[11px] text-slate-500 mt-1">
               at ${thenRate.toFixed(3)}/kWh
             </div>
           </div>
           <div>
             <div className="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-500 mb-1.5">
-              Cost today
+              {unitNoun} cost today
             </div>
-            <div className="lookback-amount-now">{fmt(nowCost)}</div>
+            <div className="lookback-amount-now">
+              {fmt(nowCost)}
+              <span className="lookback-unit-suffix">{unitSuffix}</span>
+            </div>
             <div className="text-[11px] text-slate-500 mt-1">
               at ${nowRate.toFixed(3)}/kWh
             </div>
@@ -1490,11 +1500,12 @@ function LookbackModal({ onClose }: { onClose: () => void }) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <div className="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-500 mb-1.5">
-              Annual cost change
+              {unitNoun} cost change
             </div>
             <div className="lookback-delta">
               {delta >= 0 ? "+" : ""}
               {fmt(delta)}
+              <span className="lookback-unit-suffix">{unitSuffix}</span>
             </div>
           </div>
           <div>

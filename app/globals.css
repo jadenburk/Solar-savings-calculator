@@ -326,6 +326,14 @@ input[type="range"]::-moz-range-thumb {
   line-height: 1;
 }
 
+.lookback-unit-suffix {
+  font-size: 0.5em;
+  font-weight: 500;
+  color: var(--text-dim);
+  margin-left: 4px;
+  letter-spacing: 0;
+}
+
 /* ---------- Source link ---------- */
 
 .source-link {
