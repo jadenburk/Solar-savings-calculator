@@ -15,6 +15,7 @@ import { Line } from "react-chartjs-2";
 import {
   BRAND,
   DISCLAIMER,
+  DISCLAIMER_FULL,
   COMPLIANCE_NOTE,
   SOURCES,
   SCE_RATE_ANCHORS,
@@ -533,9 +534,6 @@ export default function Page() {
         <div ref={headlineRef} className="headline">
           {fmt(total)}
         </div>
-        <div className="mt-3 text-[12px] text-slate-500">
-          Estimate based on the inputs and assumptions below.
-        </div>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
           <div className="stat-pill">
             <span className="dot-red" />
@@ -555,15 +553,10 @@ export default function Page() {
 
       {/* Inputs */}
       <section className="panel p-5 md:p-7 mb-6 md:mb-7">
-        {/* System type toggle (Phase 4) */}
+        {/* System type toggle */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5 pb-5 border-b border-white/[0.05]">
-          <div className="min-w-0">
-            <div className="text-[13px] font-semibold text-slate-200">
-              System type
-            </div>
-            <div className="text-[11.5px] text-slate-500 mt-0.5">
-              Battery presence changes self-consumption under NEM 3.0.
-            </div>
+          <div className="text-[13px] font-semibold text-slate-200">
+            System type
           </div>
           <div
             className="seg battery-seg"
@@ -709,26 +702,6 @@ export default function Page() {
           </div>
         </div>
 
-        {/* NEM 3.0 sensitivity note (Phase 4) */}
-        <div className="mt-5 pt-5 border-t border-white/[0.05] flex flex-wrap items-start gap-3 text-[12.5px] text-slate-500 leading-relaxed">
-          <span className="nem-chip">
-            NEM 3.0 residual:{" "}
-            <strong className="text-slate-200 font-semibold">
-              {withBattery
-                ? SELF_CONSUMPTION.solarBatteryResidualPct
-                : SELF_CONSUMPTION.solarOnlyResidualPct}
-              %
-            </strong>
-          </span>
-          <span className="flex-1 min-w-[220px]">
-            Under net billing, exported solar is credited well below retail —
-            so self-consumption (and batteries) materially affect realized
-            savings. The calculator adds a residual {BRAND.utility} bill of
-            this percentage on top of the PPA payment.{" "}
-            {BRAND.provider} sizes systems up to{" "}
-            {SELF_CONSUMPTION.maxOffsetPct}% of usage.
-          </span>
-        </div>
       </section>
 
       {/* Chart */}
@@ -753,55 +726,40 @@ export default function Page() {
         </div>
       </section>
 
-      {/* Bill composition (Phase 3) */}
+      {/* Bill composition */}
       <section className="panel p-5 md:p-7 mb-6 md:mb-7">
-        <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
-          <div>
-            <div className="text-[14px] font-semibold text-slate-200 tracking-tight">
-              Where your {BRAND.utility} bill goes
-            </div>
-            <div className="text-[12px] text-slate-500 mt-0.5">
-              Generation vs delivery — and which part is structurally
-              climbing.
-            </div>
-          </div>
+        <div className="text-[14px] font-semibold text-slate-200 tracking-tight mb-4">
+          Where your {BRAND.utility} bill goes
         </div>
 
-        <div className="bill-split-bar" role="img" aria-label={`Bill composition: ${BILL_COMPOSITION.generationPct} percent generation, ${BILL_COMPOSITION.deliveryPct} percent delivery`}>
+        <div
+          className="bill-split-bar"
+          role="img"
+          aria-label={`Bill composition: ${BILL_COMPOSITION.generationPct} percent generation, ${BILL_COMPOSITION.deliveryPct} percent delivery`}
+        >
           <div
             className="bill-split-generation"
             style={{ width: `${BILL_COMPOSITION.generationPct}%` }}
           >
-            <span className="bill-split-num">{BILL_COMPOSITION.generationPct}%</span>
+            <span className="bill-split-num">
+              {BILL_COMPOSITION.generationPct}%
+            </span>
             <span className="bill-split-lbl">Generation</span>
           </div>
           <div
             className="bill-split-delivery"
             style={{ width: `${BILL_COMPOSITION.deliveryPct}%` }}
           >
-            <span className="bill-split-num">{BILL_COMPOSITION.deliveryPct}%</span>
+            <span className="bill-split-num">
+              {BILL_COMPOSITION.deliveryPct}%
+            </span>
             <span className="bill-split-lbl">Delivery</span>
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-[14px] text-slate-400 leading-relaxed">
-          <div>
-            <span className="text-emerald-300 font-semibold">
-              Generation
-            </span>{" "}
-            — the electricity itself — has trended roughly flat in real
-            terms.
-          </div>
-          <div>
-            <span className="text-amber-300 font-semibold">Delivery</span>{" "}
-            — wildfire hardening, transmission, undergrounding — is the
-            fastest-rising component.
-          </div>
-        </div>
-
-        <div className="mt-4 text-[13px] text-slate-500 leading-relaxed border-t border-white/5 pt-4">
-          Solar offsets your usage and reduces exposure to the part of the
-          bill that&apos;s structurally rising. Composition figures from{" "}
+        <div className="mt-4 text-[13px] text-slate-500 leading-relaxed">
+          Delivery — wildfire hardening, transmission, undergrounding — is
+          the part that&apos;s structurally climbing. Source:{" "}
           <a
             href={SOURCES.cpucPao.url}
             target="_blank"
@@ -826,9 +784,6 @@ export default function Page() {
           {CARD_YEARS.map((y) => (
             <SavingsCard key={y} year={y} amount={savingsAt(y)} />
           ))}
-        </div>
-        <div className="mt-3 text-[11px] text-slate-500 text-center">
-          Estimates only — not a guarantee of savings.
         </div>
       </section>
 
@@ -990,7 +945,7 @@ export default function Page() {
                 </li>
                 <li>Home resale impact</li>
               </ul>
-              <p className="mt-4">{DISCLAIMER}</p>
+              <p className="mt-4">{DISCLAIMER_FULL}</p>
             </div>
           </div>
         </ModalShell>

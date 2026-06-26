@@ -19,7 +19,11 @@ export const BRAND = {
 
 /** Persistent footer disclaimer shown on every view. */
 export const DISCLAIMER =
-  "Estimates only — not a guarantee of savings. Projections are based on the inputs and assumptions shown and on publicly available utility data. Actual costs vary by system performance, household usage, future rate changes, and signed contract terms. Review your agreement for binding figures.";
+  "Estimates only — not a guarantee of savings. Tap to view assumptions and sources.";
+
+/** Long-form disclosure used inside the Assumptions modal. */
+export const DISCLAIMER_FULL =
+  "Projections are based on the inputs and assumptions shown and on publicly available utility data. Actual costs vary by system performance, household usage, future rate changes, and signed contract terms. Review your agreement for binding figures.";
 
 /** Header pill shown until this tool is compliance-reviewed. */
 export const COMPLIANCE_NOTE =
@@ -77,6 +81,4 @@ export const BILL_COMPOSITION = {
 export const SELF_CONSUMPTION = {
   solarOnlyResidualPct: 30,
   solarBatteryResidualPct: 5,
-  /** Maximum production sizing the provider will install relative to usage. */
-  maxOffsetPct: 150,
 } as const;
