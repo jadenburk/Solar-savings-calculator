@@ -110,7 +110,7 @@ const CATEGORIES: Category[] = [
       },
       {
         q: `What if ${BRAND.utility}'s rates just stop going up?`,
-        a: `It's the fair question to ask, but California has several structural reasons rates keep climbing. ${BRAND.utility} is paying out billions in wildfire-related settlements and is required by state law to underground lines, expand vegetation management, and harden the grid through the late 2020s — and the CPUC lets those costs flow into rates. On top of that, AI and data center demand is the fastest-growing load in the state, EVs and heat pumps are shifting more energy onto the grid, and California's 2045 clean-energy mandate requires a massive transmission and storage buildout. ${BRAND.utilityShort} residential rates have roughly doubled since 2014, and the CPUC has already approved further increases through 2027. Even if you assume only 3–4% per year going forward (well below the actual trend), the math still favors solar.`,
+        a: `It's the fair question to ask, but California has several structural reasons rates keep climbing. ${BRAND.utility} is paying out billions in wildfire-related settlements and is required by state law to underground lines, expand vegetation management, and harden the grid through the late 2020s — and the CPUC lets those costs flow into rates. On top of that, AI and data center demand is the fastest-growing load in the state, EVs and heat pumps are shifting more energy onto the grid, and California's 2045 clean-energy mandate requires a massive transmission and storage buildout. ${BRAND.utilityShort} residential rates have climbed about 110% over the past 10 years, and the CPUC has already approved further increases through 2027. Even if you assume only 3–4% per year going forward (well below the actual trend), the math still favors solar.`,
       },
       {
         q: `Will my ${BRAND.provider} payment go up?`,
@@ -1041,7 +1041,7 @@ function RatesModal({ onClose }: { onClose: () => void }) {
     },
     {
       h: "What the numbers have actually done",
-      b: `${BRAND.utilityShort} residential average rates roughly doubled from about $0.171/kWh in Jan 2015 to about $0.353/kWh in Oct 2025 (CPUC Public Advocates Office) — averaging well over 6% per year. The CPUC's 2025 General Rate Case authorizes additional base increases through 2027.`,
+      b: `${BRAND.utilityShort} residential average rates climbed about 110% over the past 10 years — from roughly $0.168/kWh in June 2016 to about $0.353/kWh in October 2025 (CPUC Public Advocates Office). The CPUC's 2025 General Rate Case authorizes additional base increases through 2027.`,
       src: "cpucPao",
     },
     {

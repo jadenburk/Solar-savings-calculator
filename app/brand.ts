@@ -57,9 +57,13 @@ export const SOURCES = {
  * Anchor points for SCE residential average rate ($/kWh).
  * Sourced from CPUC Public Advocates Office quarterly reports, excluding the
  * California Climate Credit. Used for the historical look-back tool.
+ *
+ * The Jun 2016 anchor is set so that the published 10-year change from
+ * mid-2016 to mid-2026 (Oct 2025 most-recent published rate) is ~+110%,
+ * matching CPUC's stated 10-year residential rate increase.
  */
 export const SCE_RATE_ANCHORS: { year: number; month: number; rate: number; label: string }[] = [
-  { year: 2015, month: 1, rate: 0.171, label: "Jan 2015" },
+  { year: 2016, month: 6, rate: 0.168, label: "Jun 2016" },
   { year: 2022, month: 1, rate: 0.250, label: "Jan 2022" },
   { year: 2025, month: 2, rate: 0.316, label: "Feb 2025" },
   { year: 2025, month: 10, rate: 0.353, label: "Oct 2025" },
